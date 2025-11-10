@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "clean-water",
+      "description": "A glass of clean, clear water against a light background.",
+      "imageUrl": "https://images.unsplash.com/photo-1512138664757-360e0aad5132?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y2xlYW4lMjB3YXRlcnxlbnwwfHx8fDE3NjI3Nzc2NDF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "clean water"
+    }
+  ]
 }

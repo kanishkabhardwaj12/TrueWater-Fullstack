@@ -17,6 +17,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Upload, Microscope } from 'lucide-react';
 import type { Sample } from '@/lib/types';
 import { format } from 'date-fns';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 type HistorySidebarProps = {
   samples: Sample[];
@@ -45,18 +51,26 @@ export default function HistorySidebar({
   return (
     <>
       <SidebarHeader>
-        <div className="space-y-2">
-            <Label htmlFor="upload-sample-input">Upload New Sample</Label>
-            <div className="flex gap-2">
-                <Input id="upload-sample-input" type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={isLoading} />
-                <Button asChild variant="outline" className="w-full">
-                    <Label htmlFor="upload-sample-input" className="cursor-pointer">
-                        <Upload className="mr-2 h-4 w-4" /> Choose Image
-                    </Label>
-                </Button>
-                 {isLoading && selectedSample?.testID.startsWith('NEW-') && <Button disabled variant="outline" size="icon"><Loader2 className="h-4 w-4 animate-spin" /></Button>}
-            </div>
-        </div>
+        <Accordion type="single" collapsible defaultValue="upload">
+          <AccordionItem value="upload" className="border-b-0">
+            <AccordionTrigger className="py-2">
+              <Label>Upload New Sample</Label>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-2 pt-2">
+                <div className="flex gap-2">
+                    <Input id="upload-sample-input" type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={isLoading} />
+                    <Button asChild variant="outline" className="w-full">
+                        <Label htmlFor="upload-sample-input" className="cursor-pointer">
+                            <Upload className="mr-2 h-4 w-4" /> Choose Image
+                        </Label>
+                    </Button>
+                     {isLoading && selectedSample?.testID.startsWith('NEW-') && <Button disabled variant="outline" size="icon"><Loader2 className="h-4 w-4 animate-spin" /></Button>}
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </SidebarHeader>
       <SidebarContent>
         <ScrollArea className="h-full">

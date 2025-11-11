@@ -13,7 +13,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Upload, Microscope } from 'lucide-react';
 import type { Sample } from '@/lib/types';
 import { format } from 'date-fns';
@@ -52,12 +51,11 @@ export default function HistorySidebar({
     <>
       <SidebarHeader>
       </SidebarHeader>
-      <SidebarContent>
-        <ScrollArea className="h-full px-2">
+      <SidebarContent className="px-2">
           <Accordion type="single" collapsible defaultValue="upload" className="w-full mb-4">
               <AccordionItem value="upload" className="border-b-0">
                   <AccordionTrigger>
-                  <Label>Upload New Sample</Label>
+                    <Label>Upload New Sample</Label>
                   </AccordionTrigger>
                   <AccordionContent>
                   <div className="space-y-2 pt-2">
@@ -99,7 +97,6 @@ export default function HistorySidebar({
                 </SidebarMenu>
               </SidebarGroupContent>
           </SidebarGroup>
-        </ScrollArea>
       </SidebarContent>
     </>
   );

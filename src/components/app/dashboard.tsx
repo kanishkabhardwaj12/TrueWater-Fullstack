@@ -145,7 +145,7 @@ export default function Dashboard() {
             isLoading={isPending || isLoadingSamples}
           />
         </Sidebar>
-        <SidebarInset>
+        <SidebarInset className="bg-transparent">
           <Header />
           <main className="flex-1 p-6 md:p-8 space-y-8">
             <AnalysisSection

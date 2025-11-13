@@ -89,3 +89,16 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .app-background {
+    @apply bg-cover bg-center bg-no-repeat bg-fixed;
+    background-image: url('https://images.unsplash.com/photo-1559701129-95a4c15a1372?q=80&w=2070&auto=format&fit=crop');
+  }
+
+  .app-background::before {
+    content: '';
+    @apply absolute inset-0 bg-background/80 backdrop-blur-sm;
+    z-index: -1;
+  }
+}

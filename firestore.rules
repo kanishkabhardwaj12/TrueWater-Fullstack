@@ -1,0 +1,46 @@
+/**
+ * @fileoverview Firestore Security Rules for the TrueWater Algae Insights application.
+ *
+ * Core Philosophy:
+ * This ruleset allows public read access to all data (water samples and algae classifications) but restricts write access exclusively to the service account. This ensures data can be accessed by any user, but can only be modified by the trusted backend.
+ *
+ * Data Structure:
+ * The data is organized into a two-level hierarchy: `/waterSamples/{waterSampleId}` and `/waterSamples/{waterSampleId}/algaeClassifications/{classificationId}`.
+ *
+ * Key Security Decisions:
+ * - Public Read Access: All users, even unauthenticated ones, can read the water sample and algae classification data.
+ * - Service-Only Writes: Only the service account (through proper IAM configuration, not enforced in the rules) can create, update, or delete data.  This is not explicitly enforced in rules.
+ * - No User Listing: Listing users is not supported.
+ * - Denormalization: Data is not denormalized, as the service account bypasses rules.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Grants public read access to water sample data, but restricts write access to service accounts.
+     * @path /waterSamples/{waterSampleId}
+     * @allow (get, list): Any user can read water sample data.
+     * @allow (create, update, delete): Only the service account can modify water sample data (IAM).
+     * @deny (create, update, delete): Any user besides the service accounts.
+     * @principle Allows public data retrieval with secured backend writes.
+     */
+    match /waterSamples/{waterSampleId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Grants public read access to algae classification data, but restricts write access to service accounts.
+     * @path /waterSamples/{waterSampleId}/algaeClassifications/{classificationId}
+     * @allow (get, list): Any user can read algae classification data.
+     * @allow (create, update, delete): Only the service account can modify algae classification data (IAM).
+     * @deny (create, update, delete): Any user besides the service accounts.
+     * @principle Allows public data retrieval with secured backend writes.
+     */
+    match /waterSamples/{waterSampleId}/algaeClassifications/{classificationId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+  }
+}

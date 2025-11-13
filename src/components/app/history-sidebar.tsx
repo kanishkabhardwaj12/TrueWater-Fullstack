@@ -56,42 +56,34 @@ export default function HistorySidebar({
 
   return (
     <>
-      <SidebarHeader>
-        <Accordion type="single" collapsible defaultValue="upload" className="w-full">
-          <AccordionItem value="upload" className="border-b-0">
-            <AccordionTrigger>
-              <Label>Upload New Sample</Label>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-2 pt-2">
-                <div className="flex gap-2">
-                  <Input
-                    id="upload-sample-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileChange}
-                    disabled={isLoading}
-                  />
-                  <Button asChild variant="outline" className="w-full">
-                    <Label htmlFor="upload-sample-input" className="cursor-pointer">
-                      <Upload className="mr-2 h-4 w-4" /> Choose Image
-                    </Label>
-                  </Button>
-                  {isLoading && selectedSample?.id.startsWith('NEW-') && (
-                    <Button disabled variant="outline" size="icon">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+      <SidebarHeader className="border-b border-sidebar-border">
+        <h2 className="text-xl font-semibold text-sidebar-foreground">Upload Sample</h2>
+        <div className="space-y-2 pt-2">
+          <div className="flex gap-2">
+            <Input
+              id="upload-sample-input"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+              disabled={isLoading}
+            />
+            <Button asChild variant="outline" className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80">
+              <Label htmlFor="upload-sample-input" className="cursor-pointer">
+                <Upload className="mr-2 h-4 w-4" /> Choose Image
+              </Label>
+            </Button>
+            {isLoading && selectedSample?.id.startsWith('NEW-') && (
+              <Button disabled variant="outline" size="icon" className="bg-sidebar-accent">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </Button>
+            )}
+          </div>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="pt-0">
-          <SidebarGroupLabel>Sample History</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-base font-semibold text-sidebar-foreground/80">Sample History</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {isLoading && samples.length === 0 ? (
@@ -106,18 +98,18 @@ export default function HistorySidebar({
                     <SidebarMenuButton
                       onClick={() => onSelectSample(sample)}
                       isActive={selectedSample?.testId === sample.testId}
-                      className="w-full h-auto py-2"
+                      className="w-full h-auto py-3"
                       size="lg"
                     >
                       <Microscope />
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">
+                      <div className="flex flex-col items-start gap-0.5">
+                        <span className="font-semibold text-base">
                           {sample.location.name.split(',')[0]}
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          ID: {sample.testId}
+                        <span className="text-xs text-sidebar-foreground/60">
+                          ID: {sample.testId.substring(0, 8)}...
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-sidebar-foreground/60">
                           Last test:{' '}
                           {format(
                             new Date(

@@ -106,7 +106,7 @@ export default function Dashboard() {
             sourceWaterLocationLatitude: newSample.location.lat,
             sourceWaterLocationLongitude: newSample.location.lng,
             sampleImageUrl: newSample.imageUrl, // In a real app, upload to Cloud Storage first
-            algaeContent: result.algaeAnalysis,
+            algaeContent: result.algaeAnalysis.map(algae => ({ name: algae.name, count: algae.count })),
           };
 
           await addDoc(waterSamplesCollection, newSampleData);
@@ -135,7 +135,7 @@ export default function Dashboard() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen">
         <Sidebar>
           <HistorySidebar
             samples={samples || []}
@@ -147,7 +147,7 @@ export default function Dashboard() {
         </Sidebar>
         <SidebarInset>
           <Header />
-          <main className="flex-1 p-4 md:p-6 space-y-6">
+          <main className="flex-1 p-6 md:p-8 space-y-8">
             <AnalysisSection
               selectedSample={selectedSample}
               analysis={analysis}

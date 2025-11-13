@@ -22,7 +22,7 @@ export default function MapSection({
 
   if (!apiKey) {
     return (
-      <Card>
+      <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Sample Locations</CardTitle>
         </CardHeader>
@@ -39,16 +39,16 @@ export default function MapSection({
   const center = selectedSample?.location || { lat: 28.7041, lng: 77.1025 };
 
   return (
-    <Card>
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle>Sample Locations</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-96 w-full rounded-lg overflow-hidden">
+        <div className="h-[500px] w-full rounded-lg overflow-hidden">
           <APIProvider apiKey={apiKey}>
             <Map
               center={center}
-              zoom={10}
+              zoom={11}
               mapId="truewater-map"
               gestureHandling={'greedy'}
               disableDefaultUI={true}
@@ -56,9 +56,10 @@ export default function MapSection({
               {uniqueLocations.map((location) => (
                 <AdvancedMarker key={location.name} position={location}>
                    <Pin 
-                    background={selectedSample?.location.name === location.name ? 'hsl(var(--primary))' : 'hsl(var(--secondary-foreground))'}
-                    borderColor={'hsl(var(--background))'}
-                    glyphColor={'hsl(var(--background))'}
+                    background={'hsl(var(--primary))'}
+                    borderColor={'hsl(var(--card))'}
+                    glyphColor={'hsl(var(--card))'}
+                    scale={selectedSample?.location.name === location.name ? 1.5 : 1}
                    />
                 </AdvancedMarker>
               ))}

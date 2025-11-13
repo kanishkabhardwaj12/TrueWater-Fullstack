@@ -7,7 +7,7 @@ export type Algae = {
 
 export type Sample = {
   id: string; // Document ID from Firestore
-  testID: string;
+  testId: string;
   testNumber: number;
   date: string | Timestamp; // Can be string from old data or Timestamp from Firestore
   location: {

@@ -47,7 +47,7 @@ export default function HistorySidebar({
   };
 
   const uniqueSamples = Array.from(
-    new Map(samples.map((s) => [s.testID, s])).values()
+    new Map(samples.map((s) => [s.testId, s])).values()
   ).sort(
     (a, b) =>
       new Date(typeof b.date === 'string' ? b.date : b.date.toDate()).getTime() -
@@ -102,10 +102,10 @@ export default function HistorySidebar({
                 </>
               ) : (
                 uniqueSamples.map((sample) => (
-                  <SidebarMenuItem key={sample.testID}>
+                  <SidebarMenuItem key={sample.testId}>
                     <SidebarMenuButton
                       onClick={() => onSelectSample(sample)}
-                      isActive={selectedSample?.testID === sample.testID}
+                      isActive={selectedSample?.testId === sample.testId}
                       className="w-full h-auto py-2"
                       size="lg"
                     >
@@ -115,7 +115,7 @@ export default function HistorySidebar({
                           {sample.location.name.split(',')[0]}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          ID: {sample.testID}
+                          ID: {sample.testId}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           Last test:{' '}

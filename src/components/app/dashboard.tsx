@@ -54,7 +54,7 @@ export default function Dashboard() {
       };
 
       const relatedSamples = samples
-        .filter((s) => s.testID === selectedSample.testID)
+        .filter((s) => s.testId === selectedSample.testId)
         .sort((a, b) => a.testNumber - b.testNumber);
 
       if (relatedSamples.length > 1) {
@@ -82,7 +82,7 @@ export default function Dashboard() {
 
       const newSample: Sample = {
         id: `NEW-${Date.now()}`,
-        testID: `NEW-${Date.now()}`,
+        testId: `NEW-${Date.now()}`,
         testNumber: 1,
         date: new Date().toISOString(),
         location: { name: 'New Upload', lat: 28.7041, lng: 77.1025 }, // Default to Delhi center
@@ -100,7 +100,7 @@ export default function Dashboard() {
           setAnalysis(result);
           
           const newSampleData = {
-            testId: newSample.testID,
+            testId: newSample.testId,
             testNumber: newSample.testNumber,
             dateOfTest: serverTimestamp(),
             sourceWaterLocationLatitude: newSample.location.lat,

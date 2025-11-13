@@ -1,6 +1,14 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useMemo } from 'react';
+import {
+  collection,
+  query,
+  where,
+  addDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { Sample, AnalysisState } from '@/lib/types';
 import { analyzeImage, getHistorySummary } from '@/lib/actions';
 import Header from './header';
@@ -14,40 +22,52 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 
-type DashboardProps = {
-  initialSamples: Sample[];
-};
-
-export default function Dashboard({ initialSamples }: DashboardProps) {
-  const [samples, setSamples] = useState<Sample[]>(initialSamples);
-  const [selectedSample, setSelectedSample] = useState<Sample | null>(
-    samples[0] || null
+export default function Dashboard() {
+  const firestore = useFirestore();
+  const waterSamplesCollection = useMemoFirebase(
+    () => collection(firestore, 'waterSamples'),
+    [firestore]
   );
+  const {
+    data: samples,
+    isLoading: isLoadingSamples,
+    error: samplesError,
+  } = useCollection<Sample>(waterSamplesCollection);
+
+  const [selectedSample, setSelectedSample] = useState<Sample | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (selectedSample) {
+    if (samples && samples.length > 0 && !selectedSample) {
+      setSelectedSample(samples[0]);
+    }
+  }, [samples, selectedSample]);
+
+  useEffect(() => {
+    if (selectedSample && samples) {
       const initialAnalysis: AnalysisState = {
         algaeAnalysis: selectedSample.algaeContent,
-        explanation: 'This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.',
+        explanation:
+          'This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.',
       };
-      
-      const relatedSamples = samples.filter(s => s.testID === selectedSample.testID).sort((a,b) => a.testNumber - b.testNumber);
+
+      const relatedSamples = samples
+        .filter((s) => s.testID === selectedSample.testID)
+        .sort((a, b) => a.testNumber - b.testNumber);
 
       if (relatedSamples.length > 1) {
-         startTransition(async () => {
-            const summary = await getHistorySummary(relatedSamples);
-            initialAnalysis.historySummary = summary;
-            setAnalysis(initialAnalysis);
+        startTransition(async () => {
+          const summary = await getHistorySummary(relatedSamples);
+          initialAnalysis.historySummary = summary;
+          setAnalysis(initialAnalysis);
         });
       } else {
         setAnalysis(initialAnalysis);
       }
     }
   }, [selectedSample, samples]);
-
 
   const handleSelectSample = (sample: Sample) => {
     setSelectedSample(sample);
@@ -61,15 +81,16 @@ export default function Dashboard({ initialSamples }: DashboardProps) {
       const dataUri = reader.result as string;
 
       const newSample: Sample = {
+        id: `NEW-${Date.now()}`,
         testID: `NEW-${Date.now()}`,
         testNumber: 1,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString(),
         location: { name: 'New Upload', lat: 28.7041, lng: 77.1025 }, // Default to Delhi center
         imageUrl: dataUri,
         imageHint: 'uploaded sample',
         algaeContent: [],
       };
-      
+
       setSelectedSample(newSample);
       setAnalysis(null);
 
@@ -77,8 +98,24 @@ export default function Dashboard({ initialSamples }: DashboardProps) {
         try {
           const result = await analyzeImage(dataUri);
           setAnalysis(result);
-          // Note: In a real app, you would save the new sample and its analysis to the database.
-          // For this demo, we just show the result.
+          
+          const newSampleData = {
+            testId: newSample.testID,
+            testNumber: newSample.testNumber,
+            dateOfTest: serverTimestamp(),
+            sourceWaterLocationLatitude: newSample.location.lat,
+            sourceWaterLocationLongitude: newSample.location.lng,
+            sampleImageUrl: newSample.imageUrl, // In a real app, upload to Cloud Storage first
+            algaeContent: result.algaeAnalysis,
+          };
+
+          await addDoc(waterSamplesCollection, newSampleData);
+
+          toast({
+            title: 'Analysis Complete',
+            description: 'New sample has been saved to the database.',
+          });
+
         } catch (error) {
           toast({
             variant: 'destructive',
@@ -88,7 +125,9 @@ export default function Dashboard({ initialSamples }: DashboardProps) {
                 ? error.message
                 : 'An unknown error occurred.',
           });
-          setSelectedSample(samples[0] || null); // Revert to a known good state
+          if (samples && samples.length > 0) {
+             setSelectedSample(samples[0] || null); // Revert to a known good state
+          }
         }
       });
     };
@@ -99,11 +138,11 @@ export default function Dashboard({ initialSamples }: DashboardProps) {
       <div className="min-h-screen bg-background">
         <Sidebar>
           <HistorySidebar
-            samples={samples}
+            samples={samples || []}
             selectedSample={selectedSample}
             onSelectSample={handleSelectSample}
             onImageUpload={handleImageUpload}
-            isLoading={isPending}
+            isLoading={isPending || isLoadingSamples}
           />
         </Sidebar>
         <SidebarInset>
@@ -112,9 +151,9 @@ export default function Dashboard({ initialSamples }: DashboardProps) {
             <AnalysisSection
               selectedSample={selectedSample}
               analysis={analysis}
-              isLoading={isPending}
+              isLoading={isPending || isLoadingSamples}
             />
-            <MapSection samples={samples} selectedSample={selectedSample} />
+            <MapSection samples={samples || []} selectedSample={selectedSample} />
           </main>
         </SidebarInset>
       </div>

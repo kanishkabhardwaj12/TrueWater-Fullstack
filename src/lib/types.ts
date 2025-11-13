@@ -1,12 +1,15 @@
+import { Timestamp } from 'firebase/firestore';
+
 export type Algae = {
   name: string;
   count: number;
 };
 
 export type Sample = {
+  id: string; // Document ID from Firestore
   testID: string;
   testNumber: number;
-  date: string;
+  date: string | Timestamp; // Can be string from old data or Timestamp from Firestore
   location: {
     name: string;
     lat: number;

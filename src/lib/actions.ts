@@ -4,6 +4,7 @@ import { analyzeAlgaeContent } from '@/ai/flows/analyze-algae-content';
 import { explainAlgaeImplications } from '@/ai/flows/explain-algae-implications';
 import { summarizeSampleHistory } from '@/ai/flows/summarize-sample-history';
 import type { Sample, Algae } from '@/lib/types';
+import { Timestamp } from 'firebase/firestore';
 
 export type AnalysisResult = {
   algaeAnalysis: Algae[];
@@ -53,7 +54,7 @@ export async function getHistorySummary(
 
   try {
     const formattedHistory = sampleHistory.map((sample) => ({
-      date: sample.date,
+      date: typeof sample.date === 'string' ? sample.date : (sample.date as Timestamp).toDate().toISOString(),
       algaeContent: sample.algaeContent.reduce(
         (acc, algae) => {
           acc[algae.name] = algae.count;

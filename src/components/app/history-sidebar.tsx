@@ -112,7 +112,7 @@ export default function HistorySidebar({
                       <Microscope />
                       <div className="flex flex-col items-start gap-0.5">
                         <span className="font-semibold text-base">
-                          {sample.location.name.split(',')[0]}
+                          {sample.location ? sample.location.name.split(',')[0] : 'Processing...'}
                         </span>
                         <span className="text-xs text-sidebar-foreground/60">
                           ID: {sample.testId.substring(0, 8)}...

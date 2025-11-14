@@ -101,7 +101,7 @@ export default function AnalysisSection({
                   <FileText className="mr-2" /> Implications
                 </TabsTrigger>
                 <TabsTrigger value="history">
-                  <History className="mr-2"/> History Summary
+                  <History className="mr-2" /> History Summary
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="content" className="mt-4">

@@ -10,12 +10,10 @@ export type Sample = {
   testId: string;
   testNumber: number;
   dateOfTest: string | Timestamp; // Stored as Timestamp in Firestore
-  location: {
-    name: string;
-    lat: number;
-    lng: number;
-  };
-  imageUrl: string;
+  locationName: string;
+  sourceWaterLocationLatitude: number;
+  sourceWaterLocationLongitude: number;
+  sampleImageUrl: string;
   imageHint: string;
   algaeContent: Algae[];
   explanation: string;

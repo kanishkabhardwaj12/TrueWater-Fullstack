@@ -71,6 +71,7 @@ function DashboardContent() {
       const initialAnalysis: AnalysisState = {
         algaeAnalysis: algaeContent,
         explanation: explanation,
+        historySummary: 'No historical data for this sample.',
       };
 
       if (samples && sample.testId) {
@@ -235,8 +236,8 @@ function DashboardContent() {
           !isMobile && state === 'expanded' ? 'md:ml-64' : ''
         )}
       >
+        <Header/>
         <main className="flex-1 space-y-4 p-4 pt-6 md:p-8">
-            <Header/>
           <AnalysisSection
             selectedSample={selectedSample}
             analysis={analysis}

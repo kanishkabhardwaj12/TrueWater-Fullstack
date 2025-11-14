@@ -8,6 +8,7 @@ import {
   query,
   orderBy,
   Firestore,
+  Timestamp,
 } from "firebase/firestore";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import type { Sample, AnalysisState } from "@/lib/types";
@@ -21,8 +22,13 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 
-export default function Home() {
+export default function Dashboard() {
   const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const [selectedSample, setSelectedSample] = useState<Sample | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const waterSamplesCollection = useMemoFirebase(
     () =>
@@ -35,14 +41,11 @@ export default function Home() {
     [firestore]
   );
 
-  const { data: samples, isLoading: isLoadingSamples } = useCollection<Sample>(
-    waterSamplesCollection
-  );
-
-  const [selectedSample, setSelectedSample] = useState<Sample | null>(null);
-  const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
+  const {
+    data: samples,
+    isLoading: isLoadingSamples,
+    error: samplesError,
+  } = useCollection<Sample>(waterSamplesCollection);
 
   useEffect(() => {
     if (samples && samples.length > 0 && !selectedSample) {
@@ -50,18 +53,32 @@ export default function Home() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [samples]);
+  
+  if (samplesError) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-red-500">
+          Could not load samples. Check Firestore connection and permissions.
+        </p>
+      </div>
+    );
+  }
 
   const handleSelectSample = (sample: Sample) => {
     setSelectedSample(sample);
-    setAnalysis(null);
+    setAnalysis(null); // Clear previous analysis
 
     startTransition(async () => {
       if (!sample) return;
+
+      const algaeContent = sample.algaeContent || [];
+      const explanation =
+        sample.explanation ||
+        "This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.";
+
       const initialAnalysis: AnalysisState = {
-        algaeAnalysis: sample.algaeContent || [],
-        explanation:
-          sample.explanation ||
-          "This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.",
+        algaeAnalysis: algaeContent,
+        explanation: explanation,
       };
 
       if (samples && sample.testId) {
@@ -102,7 +119,7 @@ export default function Home() {
           lng: 77.1025,
         },
         imageUrl: dataUri,
-        imageHint: "Analyzing...",
+        imageHint: "water sample",
         algaeContent: [],
         explanation: "Analyzing, please wait...",
       };
@@ -120,8 +137,12 @@ export default function Home() {
           if (!result || !result.algaeAnalysis) {
             throw new Error("Analysis returned an invalid result.");
           }
-
+          
           setAnalysis(result);
+
+          if (!firestore) {
+            throw new Error("Firestore is not initialized");
+          }
 
           const newSampleData = {
             testId: newSample.testId,
@@ -134,9 +155,8 @@ export default function Home() {
             algaeContent: result.algaeAnalysis,
             explanation: result.explanation,
           };
-
           const samplesCollection = collection(firestore, "waterSamples");
-
+          
           addDoc(samplesCollection, newSampleData).catch(
             async (serverError) => {
               const permissionError = new FirestorePermissionError({
@@ -147,7 +167,6 @@ export default function Home() {
 
               errorEmitter.emit("permission-error", permissionError);
 
-              // Also update UI to show feedback
               toast({
                 variant: "destructive",
                 title: "Permission Denied",
@@ -160,6 +179,7 @@ export default function Home() {
                }
             }
           );
+
 
           toast({
             title: "Analysis Complete",
@@ -199,8 +219,8 @@ export default function Home() {
         isLoading={isPending || isLoadingSamples}
       />
       <SidebarInset>
-        <Header onImageUpload={handleImageUpload} />
-        <main className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <Header />
+        <main className="flex-1 space-y-4 p-4 pt-6 md:p-8">
           <AnalysisSection
             selectedSample={selectedSample}
             analysis={analysis}

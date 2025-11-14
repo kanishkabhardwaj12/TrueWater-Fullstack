@@ -53,7 +53,6 @@ export default function AnalysisSection({
               height={400}
               className="rounded-lg object-cover w-full aspect-video"
               data-ai-hint={cleanWaterImage.imageHint}
-              unoptimized={true}
               priority
             />
           ) : (

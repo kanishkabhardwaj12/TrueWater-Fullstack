@@ -162,7 +162,7 @@ export default function AnalysisSection({
                       </p>
                     )}
                   </CardContent>
-                </card>
+                </Card>
               </TabsContent>
                <TabsContent value="history" className="mt-4">
                  <Card className="border-0 shadow-none">
@@ -179,7 +179,7 @@ export default function AnalysisSection({
                       </p>
                     )}
                   </CardContent>
-                </card>
+                </Card>
               </TabsContent>
             </Tabs>
           </CardContent>

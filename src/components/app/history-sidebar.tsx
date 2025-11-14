@@ -56,30 +56,38 @@ export default function HistorySidebar({
 
   return (
     <>
-      <SidebarHeader className="border-b border-sidebar-border">
-        <h2 className="text-xl font-semibold text-sidebar-foreground">Upload Sample</h2>
-        <div className="space-y-2 pt-2">
-          <div className="flex gap-2">
-            <Input
-              id="upload-sample-input"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-              disabled={isLoading}
-            />
-            <Button asChild variant="outline" className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80">
-              <Label htmlFor="upload-sample-input" className="cursor-pointer">
-                <Upload className="mr-2 h-4 w-4" /> Choose Image
-              </Label>
-            </Button>
-            {isLoading && selectedSample?.id.startsWith('NEW-') && (
-              <Button disabled variant="outline" size="icon" className="bg-sidebar-accent">
-                <Loader2 className="h-4 w-4 animate-spin" />
-              </Button>
-            )}
-          </div>
-        </div>
+      <SidebarHeader className="border-b border-sidebar-border p-0">
+        <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+          <AccordionItem value="item-1" className="border-none">
+            <AccordionTrigger className="p-4 text-xl font-semibold text-sidebar-foreground hover:no-underline">
+              Upload Sample
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    id="upload-sample-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={isLoading}
+                  />
+                  <Button asChild variant="outline" className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80">
+                    <Label htmlFor="upload-sample-input" className="cursor-pointer">
+                      <Upload className="mr-2 h-4 w-4" /> Choose Image
+                    </Label>
+                  </Button>
+                  {isLoading && selectedSample?.id.startsWith('NEW-') && (
+                    <Button disabled variant="outline" size="icon" className="bg-sidebar-accent">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="pt-0">

@@ -32,15 +32,15 @@ export default function MapSection({
   }, [selectedSample]);
 
   const uniqueSamplesByLocation = useMemo(() => {
-    const map = new Map<string, Sample>();
+    const locationMap = new Map<string, Sample>();
     for (const sample of samples) {
       // Create a unique key for each location
       const locationKey = `${sample.sourceWaterLocationLatitude},${sample.sourceWaterLocationLongitude}`;
-      if (!map.has(locationKey)) {
-        map.set(locationKey, sample);
+      if (!locationMap.has(locationKey)) {
+        locationMap.set(locationKey, sample);
       }
     }
-    return Array.from(map.values());
+    return Array.from(locationMap.values());
   }, [samples]);
 
   if (!apiKey) {
@@ -51,7 +51,7 @@ export default function MapSection({
         </CardHeader>
         <CardContent className="h-96 flex items-center justify-center">
           <p className="text-muted-foreground">
-            Google Maps API key is missing. Please add it to your .env.local file.
+            Google Maps API key is missing. Please add it to your .env file.
           </p>
         </CardContent>
       </Card>

@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 import { genkit, z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';

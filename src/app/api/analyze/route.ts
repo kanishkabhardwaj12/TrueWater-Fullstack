@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-// We use the @ alias to point to src/
-import { getAlgaeInsightFlow } from '@/ai/dev'; 
+import { getAlgaeInsight } from '@/ai/actions';
 
 export async function POST(req: Request) {
   try {
@@ -14,7 +13,7 @@ export async function POST(req: Request) {
     // 1. Send image to Python Microservice
     const pythonFormData = new FormData();
     pythonFormData.append('file', file);
-    
+
     // Ensure your Python server is running on port 8000!
     const pythonResponse = await fetch('http://127.0.0.1:8000/analyze', {
       method: 'POST',
@@ -22,14 +21,18 @@ export async function POST(req: Request) {
     });
 
     if (!pythonResponse.ok) {
-      throw new Error(`Python model error: ${pythonResponse.statusText}`);
+      const errorText = await pythonResponse.text();
+      throw new Error(`Python model error: ${pythonResponse.statusText} - ${errorText}`);
     }
 
     const algaeCounts = await pythonResponse.json();
-    
-    // 2. Send data to Genkit AI
-    // We call the flow function directly.
-    const aiInsight = await getAlgaeInsightFlow(algaeCounts);
+
+    if (algaeCounts.status === 'error') {
+      throw new Error(`Python analysis failed: ${algaeCounts.message}`);
+    }
+
+    // 2. Send data to our new Genkit Server Action
+    const aiInsight = await getAlgaeInsight(algaeCounts);
 
     return NextResponse.json({
       counts: algaeCounts,

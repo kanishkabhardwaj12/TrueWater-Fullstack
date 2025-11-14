@@ -60,8 +60,8 @@ export default function HistorySidebar({
   });
 
   const sidebarContent = (
-    <div className="flex flex-col h-full">
-      <div className="p-4 bg-primary/90 text-primary-foreground rounded-t-lg">
+    <div className="flex flex-col h-full bg-primary/90 text-primary-foreground rounded-lg">
+      <div className="p-4">
         <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
           <AccordionItem value="item-1" className="border-b-0">
             <AccordionTrigger className="text-base font-semibold hover:no-underline text-primary-foreground">
@@ -101,32 +101,32 @@ export default function HistorySidebar({
         </Accordion>
       </div>
 
-      <div className="flex-1 overflow-auto p-4 bg-card">
-        <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+      <div className="flex-1 overflow-auto p-4">
+        <h3 className="text-sm font-semibold text-primary-foreground/80 mb-2">
           Sample History
         </h3>
         <nav className="grid items-start gap-1">
           {isLoading && samples.length === 0 ? (
             <>
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full bg-primary/80" />
+              <Skeleton className="h-16 w-full bg-primary/80" />
+              <Skeleton className="h-16 w-full bg-primary/80" />
             </>
           ) : uniqueSamples.length > 0 ? (
             uniqueSamples.map((sample) => (
               <Button
                 key={sample.id}
                 variant={selectedSample?.testId === sample.testId ? 'secondary' : 'ghost'}
-                className="w-full h-auto py-2 flex-col items-start"
+                className="w-full h-auto py-2 flex-col items-start hover:bg-primary/70 data-[variant=ghost]:text-primary-foreground"
                 onClick={() => onSelectSample(sample)}
               >
                 <div className="font-semibold text-left">
                   {sample.locationName?.split(',')[0] || 'Processing...'}
                 </div>
-                <div className="text-xs text-muted-foreground text-left">
+                <div className="text-xs text-primary-foreground/70 text-left">
                   ID: {sample.testId.substring(0, 8)}...
                 </div>
-                <div className="text-xs text-muted-foreground text-left">
+                <div className="text-xs text-primary-foreground/70 text-left">
                   {sample.dateOfTest ? `Date: ${format(
                       typeof sample.dateOfTest === 'string'
                         ? new Date(sample.dateOfTest)
@@ -138,7 +138,7 @@ export default function HistorySidebar({
               </Button>
             ))
           ) : (
-            <div className="text-center text-sm text-muted-foreground py-10">
+            <div className="text-center text-sm text-primary-foreground/70 py-10">
               No samples found.
             </div>
           )}
@@ -158,7 +158,7 @@ export default function HistorySidebar({
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-card sm:flex">
+    <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex p-2">
       {sidebarContent}
     </aside>
   );

@@ -1,3 +1,4 @@
+
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
@@ -40,7 +41,6 @@ export const getAlgaeInsightFlow = ai.defineFlow(
     `;
 
     const { text } = await ai.generate({
-      // 👇 FIX: Added 'googleai/' prefix here
       model: 'googleai/gemini-1.5-flash',
       prompt: prompt,
     });

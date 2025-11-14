@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect, useTransition, useMemo } from "react";
+import { useState, useEffect, useTransition } from "react";
 import {
   collection,
   addDoc,
   serverTimestamp,
   query,
   orderBy,
-  Firestore,
   Timestamp,
 } from "firebase/firestore";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
@@ -18,16 +17,19 @@ import HistorySidebar from "./history-sidebar";
 import AnalysisSection from "./analysis-section";
 import MapSection from "./map-section";
 import { useToast } from "@/hooks/use-toast";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { cn } from "@/lib/utils";
 
-export default function Dashboard() {
+function DashboardContent() {
   const firestore = useFirestore();
   const [selectedSample, setSelectedSample] = useState<Sample | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const { isMobile, state } = useSidebar();
+
 
   const waterSamplesCollection = useMemoFirebase(
     () =>
@@ -46,12 +48,13 @@ export default function Dashboard() {
     error: samplesError,
   } = useCollection<Sample>(waterSamplesCollection);
 
+
   useEffect(() => {
     if (samples && samples.length > 0 && !selectedSample) {
       handleSelectSample(samples[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [samples, selectedSample]);
+  }, [samples]);
 
   if (isLoadingSamples && !samples) {
     return (
@@ -72,16 +75,17 @@ export default function Dashboard() {
     );
   }
 
+
   const handleSelectSample = (sample: Sample) => {
     setSelectedSample(sample);
     setAnalysis(null); // Clear previous analysis
 
     startTransition(async () => {
       if (!sample) return;
-
+      
       const algaeContent = sample.algaeContent || [];
       const explanation =
-        sample.explanation ||
+      sample.explanation ||
         "This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.";
 
       const initialAnalysis: AnalysisState = {
@@ -150,7 +154,7 @@ export default function Dashboard() {
           if (!firestore) {
             throw new Error("Firestore is not initialized");
           }
-
+          
           const newSampleData = {
             testId: newSample.testId,
             testNumber: newSample.testNumber,
@@ -162,6 +166,7 @@ export default function Dashboard() {
             algaeContent: result.algaeAnalysis,
             explanation: result.explanation,
           };
+
           const samplesCollection = collection(firestore, "waterSamples");
 
           addDoc(samplesCollection, newSampleData).catch(
@@ -217,7 +222,7 @@ export default function Dashboard() {
   };
 
   return (
-    <SidebarProvider>
+    <>
       <HistorySidebar
         samples={samples || []}
         selectedSample={selectedSample}
@@ -225,7 +230,12 @@ export default function Dashboard() {
         onImageUpload={handleImageUpload}
         isLoading={isPending || isLoadingSamples}
       />
-      <SidebarInset>
+      <div
+        className={cn(
+          'transition-[margin-left] ease-in-out duration-300',
+          !isMobile && state === 'expanded' ? 'md:ml-64' : 'md:ml-0'
+        )}
+      >
         <Header />
         <main className="flex-1 space-y-4 p-4 pt-6 md:p-8">
           <AnalysisSection
@@ -238,7 +248,16 @@ export default function Dashboard() {
             selectedSample={selectedSample}
           />
         </main>
-      </SidebarInset>
+      </div>
+    </>
+  );
+}
+
+
+export default function Dashboard() {
+  return (
+    <SidebarProvider>
+      <DashboardContent />
     </SidebarProvider>
   );
 }

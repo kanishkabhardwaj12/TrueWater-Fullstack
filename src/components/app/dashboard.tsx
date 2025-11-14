@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
 import {
   collection,
   addDoc,
   serverTimestamp,
   query,
   orderBy,
+  Firestore,
 } from "firebase/firestore";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import type { Sample, AnalysisState } from "@/lib/types";
@@ -16,19 +17,20 @@ import HistorySidebar from "./history-sidebar";
 import AnalysisSection from "./analysis-section";
 import MapSection from "./map-section";
 import { useToast } from "@/hooks/use-toast";
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarInset,
-} from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
-export default function Dashboard() {
+export default function Home() {
   const firestore = useFirestore();
 
   const waterSamplesCollection = useMemoFirebase(
     () =>
       firestore
-        ? query(collection(firestore, "waterSamples"), orderBy("dateOfTest", "desc"))
+        ? query(
+            collection(firestore, "waterSamples"),
+            orderBy("dateOfTest", "desc")
+          )
         : null,
     [firestore]
   );
@@ -46,7 +48,7 @@ export default function Dashboard() {
     if (samples && samples.length > 0 && !selectedSample) {
       handleSelectSample(samples[0]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [samples]);
 
   const handleSelectSample = (sample: Sample) => {
@@ -54,6 +56,7 @@ export default function Dashboard() {
     setAnalysis(null);
 
     startTransition(async () => {
+      if (!sample) return;
       const initialAnalysis: AnalysisState = {
         algaeAnalysis: sample.algaeContent || [],
         explanation:
@@ -61,7 +64,7 @@ export default function Dashboard() {
           "This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.",
       };
 
-      if (samples) {
+      if (samples && sample.testId) {
         const relatedSamples = samples
           .filter((s) => s.testId === sample.testId)
           .sort((a, b) => a.testNumber - b.testNumber);
@@ -114,6 +117,10 @@ export default function Dashboard() {
         try {
           const result = await analyzeImage(dataUri);
 
+          if (!result || !result.algaeAnalysis) {
+            throw new Error("Analysis returned an invalid result.");
+          }
+
           setAnalysis(result);
 
           const newSampleData = {
@@ -128,27 +135,52 @@ export default function Dashboard() {
             explanation: result.explanation,
           };
 
-          const docRef = await addDoc(
-            collection(firestore, "waterSamples"),
-            newSampleData
+          const samplesCollection = collection(firestore, "waterSamples");
+
+          addDoc(samplesCollection, newSampleData).catch(
+            async (serverError) => {
+              const permissionError = new FirestorePermissionError({
+                path: samplesCollection.path,
+                operation: "create",
+                requestResourceData: newSampleData,
+              });
+
+              errorEmitter.emit("permission-error", permissionError);
+
+              // Also update UI to show feedback
+              toast({
+                variant: "destructive",
+                title: "Permission Denied",
+                description: "You do not have permission to save new samples.",
+              });
+               if (samples && samples.length > 0) {
+                 handleSelectSample(samples[0]);
+               } else {
+                 setSelectedSample(null);
+               }
+            }
           );
-          
+
           toast({
             title: "Analysis Complete",
-            description: `Found ${result.algaeAnalysis.reduce((sum, a) => sum + a.count, 0)} algae microbes.`,
+            description: `Found ${result.algaeAnalysis.reduce(
+              (sum, a) => sum + a.count,
+              0
+            )} algae microbes. Saving sample...`,
           });
-
         } catch (error) {
-          console.error("Analysis failed:", error);
+          console.error("Analysis or saving failed:", error);
           toast({
             variant: "destructive",
             title: "Analysis Failed",
             description:
-              error instanceof Error ? error.message : "An unknown error occurred.",
+              error instanceof Error
+                ? error.message
+                : "An unknown error occurred during analysis.",
           });
           // Revert to previous sample if it exists
           if (samples && samples.length > 0) {
-            setSelectedSample(samples[0]);
+            handleSelectSample(samples[0]);
           } else {
             setSelectedSample(null);
           }
@@ -158,30 +190,28 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-muted/40">
-      <SidebarProvider>
-        <HistorySidebar
-          samples={samples || []}
-          selectedSample={selectedSample}
-          onSelectSample={handleSelectSample}
-          onImageUpload={handleImageUpload}
-          isLoading={isPending || isLoadingSamples}
-        />
-        <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 flex-1">
-          <Header />
-          <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-            <AnalysisSection
-              selectedSample={selectedSample}
-              analysis={analysis}
-              isLoading={isPending}
-            />
-            <MapSection
-              samples={samples || []}
-              selectedSample={selectedSample}
-            />
-          </main>
-        </div>
-      </SidebarProvider>
-    </div>
+    <SidebarProvider>
+      <HistorySidebar
+        samples={samples || []}
+        selectedSample={selectedSample}
+        onSelectSample={handleSelectSample}
+        onImageUpload={handleImageUpload}
+        isLoading={isPending || isLoadingSamples}
+      />
+      <SidebarInset>
+        <Header onImageUpload={handleImageUpload} />
+        <main className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+          <AnalysisSection
+            selectedSample={selectedSample}
+            analysis={analysis}
+            isLoading={isPending}
+          />
+          <MapSection
+            samples={samples || []}
+            selectedSample={selectedSample}
+          />
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

@@ -12,32 +12,17 @@ import { Label } from '@/components/ui/label';
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Sample } from '@/lib/types';
 import { format } from 'date-fns';
 import {
-  ChevronLeft,
-  FileText,
-  History,
-  Home,
-  LineChart,
-  Loader2,
-  Package,
-  Package2,
-  PanelLeft,
-  PlusCircle,
-  Search,
-  Settings,
-  ShoppingCart,
   Upload,
-  Users2,
+  Loader2,
+  PanelLeft,
 } from 'lucide-react';
+import { useSidebar } from '../ui/sidebar';
 
 type HistorySidebarProps = {
   samples: Sample[];
@@ -62,9 +47,11 @@ export default function HistorySidebar({
     }
   };
   const isMobile = useIsMobile();
+  const { open: openMobile, setOpen: setOpenMobile } = useSidebar();
 
   const uniqueTestIds = new Set<string>();
   const uniqueSamples = samples.filter((sample) => {
+    if (!sample.testId) return false;
     if (uniqueTestIds.has(sample.testId)) {
       return false;
     }
@@ -74,10 +61,10 @@ export default function HistorySidebar({
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b">
+      <div className="p-4 bg-primary text-primary-foreground rounded-t-lg">
         <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
           <AccordionItem value="item-1" className="border-b-0">
-            <AccordionTrigger className="text-base font-semibold hover:no-underline">
+            <AccordionTrigger className="text-base font-semibold hover:no-underline text-primary-foreground">
               Upload Sample
             </AccordionTrigger>
             <AccordionContent>
@@ -92,7 +79,7 @@ export default function HistorySidebar({
                 />
                 <Button
                   asChild
-                  variant="outline"
+                  variant="secondary"
                   className="w-full"
                   disabled={isLoading}
                 >
@@ -114,7 +101,7 @@ export default function HistorySidebar({
         </Accordion>
       </div>
 
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto p-4 bg-card">
         <h3 className="text-sm font-semibold text-muted-foreground mb-2">
           Sample History
         </h3>
@@ -134,7 +121,7 @@ export default function HistorySidebar({
                 onClick={() => onSelectSample(sample)}
               >
                 <div className="font-semibold text-left">
-                  {sample.location?.name?.split(',')[0] || 'Processing...'}
+                  {sample.locationName?.split(',')[0] || 'Processing...'}
                 </div>
                 <div className="text-xs text-muted-foreground text-left">
                   ID: {sample.testId.substring(0, 8)}...
@@ -162,13 +149,7 @@ export default function HistorySidebar({
 
   if (isMobile) {
     return (
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button size="icon" variant="outline" className="sm:hidden">
-            <PanelLeft className="h-5 w-5" />
-            <span className="sr-only">Toggle Menu</span>
-          </Button>
-        </SheetTrigger>
+      <Sheet open={openMobile} onOpenChange={setOpenMobile}>
         <SheetContent side="left" className="sm:max-w-xs p-0">
           {sidebarContent}
         </SheetContent>

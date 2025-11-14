@@ -56,26 +56,6 @@ function DashboardContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [samples]);
 
-  if (isLoadingSamples && !samples) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p>Loading samples...</p>
-      </div>
-    );
-  }
-
-  if (samplesError) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-red-500 text-center">
-          <p className="font-bold mb-2">Could not load samples.</p>
-          <p className="text-sm">{samplesError.message}</p>
-        </div>
-      </div>
-    );
-  }
-
-
   const handleSelectSample = (sample: Sample) => {
     setSelectedSample(sample);
     setAnalysis(null); // Clear previous analysis
@@ -221,8 +201,27 @@ function DashboardContent() {
     };
   };
 
+  if (isLoadingSamples && !samples) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Loading samples...</p>
+      </div>
+    );
+  }
+
+  if (samplesError) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-red-500 text-center">
+          <p className="font-bold mb-2">Could not load samples.</p>
+          <p className="text-sm">{samplesError.message}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
+    <div className="min-h-screen w-full bg-muted/40">
       <HistorySidebar
         samples={samples || []}
         selectedSample={selectedSample}
@@ -232,12 +231,12 @@ function DashboardContent() {
       />
       <div
         className={cn(
-          'transition-[margin-left] ease-in-out duration-300',
-          !isMobile && state === 'expanded' ? 'md:ml-64' : 'md:ml-0'
+          'flex flex-col transition-[margin-left] ease-in-out duration-300',
+          !isMobile && state === 'expanded' ? 'md:ml-64' : ''
         )}
       >
-        <Header />
         <main className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+            <Header/>
           <AnalysisSection
             selectedSample={selectedSample}
             analysis={analysis}
@@ -249,7 +248,7 @@ function DashboardContent() {
           />
         </main>
       </div>
-    </>
+    </div>
   );
 }
 

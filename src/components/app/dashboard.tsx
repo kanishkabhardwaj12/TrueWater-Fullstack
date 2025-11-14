@@ -24,11 +24,10 @@ import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function Dashboard() {
   const firestore = useFirestore();
-  const { toast } = useToast();
-
   const [selectedSample, setSelectedSample] = useState<Sample | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
 
   const waterSamplesCollection = useMemoFirebase(
     () =>
@@ -52,14 +51,23 @@ export default function Dashboard() {
       handleSelectSample(samples[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [samples]);
-  
+  }, [samples, selectedSample]);
+
+  if (isLoadingSamples && !samples) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Loading samples...</p>
+      </div>
+    );
+  }
+
   if (samplesError) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500">
-          Could not load samples. Check Firestore connection and permissions.
-        </p>
+        <div className="text-red-500 text-center">
+          <p className="font-bold mb-2">Could not load samples.</p>
+          <p className="text-sm">{samplesError.message}</p>
+        </div>
       </div>
     );
   }
@@ -107,18 +115,17 @@ export default function Dashboard() {
     reader.onload = () => {
       const dataUri = reader.result as string;
       const optimisticId = `TEMP-${Date.now()}`;
+      const optimisticTestId = `TEST-${Date.now()}`;
 
       const newSample: Sample = {
         id: optimisticId,
-        testId: `TEST-${Date.now()}`,
+        testId: optimisticTestId,
         testNumber: 1,
         dateOfTest: new Date().toISOString(),
-        location: {
-          name: "New Upload (Delhi NCR)",
-          lat: 28.7041,
-          lng: 77.1025,
-        },
-        imageUrl: dataUri,
+        locationName: "New Upload (Delhi NCR)",
+        sourceWaterLocationLatitude: 28.7041,
+        sourceWaterLocationLongitude: 77.1025,
+        sampleImageUrl: dataUri,
         imageHint: "water sample",
         algaeContent: [],
         explanation: "Analyzing, please wait...",
@@ -137,7 +144,7 @@ export default function Dashboard() {
           if (!result || !result.algaeAnalysis) {
             throw new Error("Analysis returned an invalid result.");
           }
-          
+
           setAnalysis(result);
 
           if (!firestore) {
@@ -148,15 +155,15 @@ export default function Dashboard() {
             testId: newSample.testId,
             testNumber: newSample.testNumber,
             dateOfTest: serverTimestamp(),
-            sourceWaterLocationLatitude: newSample.location.lat,
-            sourceWaterLocationLongitude: newSample.location.lng,
-            locationName: newSample.location.name,
+            sourceWaterLocationLatitude: newSample.sourceWaterLocationLatitude,
+            sourceWaterLocationLongitude: newSample.sourceWaterLocationLongitude,
+            locationName: newSample.locationName,
             sampleImageUrl: dataUri, // In a real app, this would be an uploaded URL
             algaeContent: result.algaeAnalysis,
             explanation: result.explanation,
           };
           const samplesCollection = collection(firestore, "waterSamples");
-          
+
           addDoc(samplesCollection, newSampleData).catch(
             async (serverError) => {
               const permissionError = new FirestorePermissionError({
@@ -172,14 +179,14 @@ export default function Dashboard() {
                 title: "Permission Denied",
                 description: "You do not have permission to save new samples.",
               });
-               if (samples && samples.length > 0) {
-                 handleSelectSample(samples[0]);
-               } else {
-                 setSelectedSample(null);
-               }
+              // Revert optimistic update
+              if (samples && samples.length > 0) {
+                handleSelectSample(samples[0]);
+              } else {
+                setSelectedSample(null);
+              }
             }
           );
-
 
           toast({
             title: "Analysis Complete",

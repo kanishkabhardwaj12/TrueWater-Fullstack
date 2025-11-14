@@ -2,13 +2,13 @@
 
 import {
   APIProvider,
-  Map,
+  Map as GoogleMap,
   AdvancedMarker,
   Pin,
 } from '@vis.gl/react-google-maps';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { Sample } from '@/lib/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 type MapSectionProps = {
   samples: Sample[];
@@ -23,10 +23,25 @@ export default function MapSection({
   const [center, setCenter] = useState({ lat: 28.7041, lng: 77.1025 });
 
   useEffect(() => {
-    if (selectedSample?.location) {
-      setCenter(selectedSample.location);
+    if (selectedSample) {
+      setCenter({ 
+        lat: selectedSample.sourceWaterLocationLatitude, 
+        lng: selectedSample.sourceWaterLocationLongitude 
+      });
     }
   }, [selectedSample]);
+
+  const uniqueSamplesByLocation = useMemo(() => {
+    const map = new Map<string, Sample>();
+    for (const sample of samples) {
+      // Create a unique key for each location
+      const locationKey = `${sample.sourceWaterLocationLatitude},${sample.sourceWaterLocationLongitude}`;
+      if (!map.has(locationKey)) {
+        map.set(locationKey, sample);
+      }
+    }
+    return Array.from(map.values());
+  }, [samples]);
 
   if (!apiKey) {
     return (
@@ -36,20 +51,12 @@ export default function MapSection({
         </CardHeader>
         <CardContent className="h-96 flex items-center justify-center">
           <p className="text-muted-foreground">
-            Google Maps API key is missing.
+            Google Maps API key is missing. Please add it to your .env.local file.
           </p>
         </CardContent>
       </Card>
     );
   }
-  
-  const uniqueLocations = Array.from(
-    new Map(
-      samples
-        .filter(s => s.location && typeof s.location.lat === 'number' && typeof s.location.lng === 'number')
-        .map(s => [s.location.name, s.location])
-    ).values()
-  );
 
   return (
     <Card>
@@ -60,7 +67,7 @@ export default function MapSection({
       <CardContent>
         <div className="h-[500px] w-full rounded-lg overflow-hidden border">
           <APIProvider apiKey={apiKey}>
-            <Map
+            <GoogleMap
               center={center}
               zoom={10}
               mapId="truewater-map"
@@ -68,17 +75,20 @@ export default function MapSection({
               disableDefaultUI={true}
               mapTypeControl={false}
             >
-              {uniqueLocations.map((location) => (
-                <AdvancedMarker key={location.name} position={location}>
+              {uniqueSamplesByLocation.map((sample) => (
+                <AdvancedMarker 
+                  key={sample.id} 
+                  position={{ lat: sample.sourceWaterLocationLatitude, lng: sample.sourceWaterLocationLongitude }}
+                >
                    <Pin 
                     background={'hsl(var(--primary))'}
                     borderColor={'hsl(var(--primary-foreground))'}
                     glyphColor={'hsl(var(--primary-foreground))'}
-                    scale={selectedSample?.location.name === location.name ? 1.5 : 1}
+                    scale={selectedSample?.testId === sample.testId ? 1.5 : 1}
                    />
                 </AdvancedMarker>
               ))}
-            </Map>
+            </GoogleMap>
           </APIProvider>
         </div>
       </CardContent>

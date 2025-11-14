@@ -45,7 +45,7 @@ export default function AnalysisSection({
           <CardTitle>Reference: Clean Sample</CardTitle>
         </CardHeader>
         <CardContent>
-          {cleanWaterImage && (
+          {cleanWaterImage ? (
             <Image
               src={cleanWaterImage.imageUrl}
               alt={cleanWaterImage.description}
@@ -55,6 +55,8 @@ export default function AnalysisSection({
               data-ai-hint={cleanWaterImage.imageHint}
               unoptimized={true}
             />
+          ) : (
+            <Skeleton className="w-full aspect-video rounded-lg" />
           )}
         </CardContent>
       </Card>

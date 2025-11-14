@@ -7,7 +7,7 @@ export default function Header() {
   return (
     <>
       <header className="flex h-20 items-center gap-4 border-b bg-card/50 backdrop-blur-lg px-6 sticky top-0 z-30">
-        <SidebarTrigger className="md:hidden" />
+        <SidebarTrigger />
         <div className="flex items-center gap-3">
             <Droplets className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold tracking-tight text-foreground/90">

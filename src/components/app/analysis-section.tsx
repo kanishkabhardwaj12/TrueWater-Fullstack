@@ -113,7 +113,6 @@ export default function AnalysisSection({
                         <Skeleton className="h-20 w-full" />
                       </div>
                     ) : (
-                      <ScrollArea className="h-60">
                         <Table>
                           <TableHeader>
                             <TableRow>
@@ -142,7 +141,6 @@ export default function AnalysisSection({
                             )}
                           </TableBody>
                         </Table>
-                      </ScrollArea>
                     )}
                   </CardContent>
                 </Card>

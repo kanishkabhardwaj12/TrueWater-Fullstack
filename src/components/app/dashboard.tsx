@@ -20,12 +20,13 @@ import {
   SidebarProvider,
   Sidebar,
   SidebarInset,
+  SidebarRail,
 } from '@/components/ui/sidebar';
 
 export default function Dashboard() {
   const firestore = useFirestore();
   const waterSamplesCollection = useMemoFirebase(
-    () => collection(firestore, 'waterSamples'),
+    () => (firestore ? collection(firestore, 'waterSamples') : null),
     [firestore]
   );
   const {
@@ -97,33 +98,43 @@ export default function Dashboard() {
       startTransition(async () => {
         try {
           const result = await analyzeImage(dataUri);
-          setAnalysis(result);
-          
+
           if (result && result.algaeAnalysis) {
-            const newSampleData = {
-              testId: newSample.testId,
-              testNumber: newSample.testNumber,
-              dateOfTest: serverTimestamp(),
-              sourceWaterLocationLatitude: newSample.location.lat,
-              sourceWaterLocationLongitude: newSample.location.lng,
-              sampleImageUrl: newSample.imageUrl, // In a real app, upload to Cloud Storage first
-              algaeContent: result.algaeAnalysis.map(algae => ({ name: algae.name, count: algae.count })),
-            };
+            setAnalysis(result);
 
-            await addDoc(waterSamplesCollection, newSampleData);
+            if (waterSamplesCollection) {
+              const newSampleData = {
+                testId: newSample.testId,
+                testNumber: newSample.testNumber,
+                dateOfTest: serverTimestamp(),
+                sourceWaterLocationLatitude: newSample.location.lat,
+                sourceWaterLocationLongitude: newSample.location.lng,
+                sampleImageUrl: newSample.imageUrl, // In a real app, upload to Cloud Storage first
+                algaeContent: result.algaeAnalysis.map((algae) => ({
+                  name: algae.name,
+                  count: algae.count,
+                })),
+              };
 
-            toast({
-              title: 'Analysis Complete',
-              description: 'New sample has been saved to the database.',
-            });
+              await addDoc(waterSamplesCollection, newSampleData);
+
+              toast({
+                title: 'Analysis Complete',
+                description: 'New sample has been saved to the database.',
+              });
+            }
           } else {
-             toast({
-              variant: 'destructive',
-              title: 'Analysis Incomplete',
-              description: 'The AI analysis did not return any algae content.',
+            setAnalysis({
+              algaeAnalysis: [],
+              explanation: 'No algae content was detected.',
+            });
+            toast({
+              variant: 'default',
+              title: 'Analysis Complete',
+              description:
+                'The AI analysis did not detect any algae content.',
             });
           }
-
         } catch (error) {
           toast({
             variant: 'destructive',
@@ -134,7 +145,7 @@ export default function Dashboard() {
                 : 'An unknown error occurred.',
           });
           if (samples && samples.length > 0) {
-             setSelectedSample(samples[0] || null); // Revert to a known good state
+            setSelectedSample(samples[0] || null); // Revert to a known good state
           }
         }
       });
@@ -144,7 +155,7 @@ export default function Dashboard() {
   return (
     <SidebarProvider>
       <div className="min-h-screen">
-        <Sidebar>
+        <Sidebar collapsible="icon">
           <HistorySidebar
             samples={samples || []}
             selectedSample={selectedSample}
@@ -152,6 +163,7 @@ export default function Dashboard() {
             onImageUpload={handleImageUpload}
             isLoading={isPending || isLoadingSamples}
           />
+          <SidebarRail />
         </Sidebar>
         <SidebarInset className="bg-transparent">
           <Header />
@@ -161,7 +173,10 @@ export default function Dashboard() {
               analysis={analysis}
               isLoading={isPending || isLoadingSamples}
             />
-            <MapSection samples={samples || []} selectedSample={selectedSample} />
+            <MapSection
+              samples={samples || []}
+              selectedSample={selectedSample}
+            />
           </main>
         </SidebarInset>
       </div>

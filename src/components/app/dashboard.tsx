@@ -20,7 +20,6 @@ import {
   SidebarProvider,
   Sidebar,
   SidebarInset,
-  SidebarRail,
 } from '@/components/ui/sidebar';
 
 export default function Dashboard() {
@@ -154,32 +153,29 @@ export default function Dashboard() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen">
-        <Sidebar collapsible="icon">
-          <HistorySidebar
-            samples={samples || []}
+      <Sidebar collapsible="icon">
+        <HistorySidebar
+          samples={samples || []}
+          selectedSample={selectedSample}
+          onSelectSample={handleSelectSample}
+          onImageUpload={handleImageUpload}
+          isLoading={isPending || isLoadingSamples}
+        />
+      </Sidebar>
+      <SidebarInset className="bg-transparent">
+        <Header />
+        <main className="flex-1 p-6 md:p-8 space-y-8">
+          <AnalysisSection
             selectedSample={selectedSample}
-            onSelectSample={handleSelectSample}
-            onImageUpload={handleImageUpload}
+            analysis={analysis}
             isLoading={isPending || isLoadingSamples}
           />
-          <SidebarRail />
-        </Sidebar>
-        <SidebarInset className="bg-transparent">
-          <Header />
-          <main className="flex-1 p-6 md:p-8 space-y-8">
-            <AnalysisSection
-              selectedSample={selectedSample}
-              analysis={analysis}
-              isLoading={isPending || isLoadingSamples}
-            />
-            <MapSection
-              samples={samples || []}
-              selectedSample={selectedSample}
-            />
-          </main>
-        </SidebarInset>
-      </div>
+          <MapSection
+            samples={samples || []}
+            selectedSample={selectedSample}
+          />
+        </main>
+      </SidebarInset>
     </SidebarProvider>
   );
 }

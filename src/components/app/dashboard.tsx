@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy,
+} from "firebase/firestore";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import type { Sample, AnalysisState } from "@/lib/types";
-import { getHistorySummary } from "@/lib/actions"; // kept for history summary
+import { analyzeImage, getHistorySummary } from "@/lib/actions";
 import Header from "./header";
 import HistorySidebar from "./history-sidebar";
 import AnalysisSection from "./analysis-section";
@@ -18,10 +24,15 @@ import {
 
 export default function Dashboard() {
   const firestore = useFirestore();
+
   const waterSamplesCollection = useMemoFirebase(
-    () => collection(firestore, "waterSamples"),
+    () =>
+      firestore
+        ? query(collection(firestore, "waterSamples"), orderBy("dateOfTest", "desc"))
+        : null,
     [firestore]
   );
+
   const { data: samples, isLoading: isLoadingSamples } = useCollection<Sample>(
     waterSamplesCollection
   );
@@ -31,130 +42,115 @@ export default function Dashboard() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
-  // Set initial selection
   useEffect(() => {
     if (samples && samples.length > 0 && !selectedSample) {
-      setSelectedSample(samples[0]);
+      handleSelectSample(samples[0]);
     }
-  }, [samples, selectedSample]);
-
-  // Handle history summary when selection changes
-  useEffect(() => {
-    if (selectedSample && samples) {
-      const initialAnalysis: AnalysisState = {
-        algaeAnalysis: selectedSample.algaeContent || [],
-        explanation:
-          "This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.",
-      };
-
-      const relatedSamples = samples
-        .filter((s) => s.testId === selectedSample.testId)
-        .sort((a, b) => a.testNumber - b.testNumber);
-
-      if (relatedSamples.length > 1) {
-        startTransition(async () => {
-          const summary = await getHistorySummary(relatedSamples);
-          initialAnalysis.historySummary = summary;
-          setAnalysis(initialAnalysis);
-        });
-      } else {
-        setAnalysis(initialAnalysis);
-      }
-    }
-  }, [selectedSample, samples]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [samples]);
 
   const handleSelectSample = (sample: Sample) => {
     setSelectedSample(sample);
     setAnalysis(null);
+
+    startTransition(async () => {
+      const initialAnalysis: AnalysisState = {
+        algaeAnalysis: sample.algaeContent || [],
+        explanation:
+          sample.explanation ||
+          "This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.",
+      };
+
+      if (samples) {
+        const relatedSamples = samples
+          .filter((s) => s.testId === sample.testId)
+          .sort((a, b) => a.testNumber - b.testNumber);
+
+        if (relatedSamples.length > 1) {
+          try {
+            const summary = await getHistorySummary(relatedSamples);
+            initialAnalysis.historySummary = summary;
+          } catch (error) {
+            console.error("Failed to get history summary:", error);
+            initialAnalysis.historySummary = "Could not load history summary.";
+          }
+        }
+      }
+      setAnalysis(initialAnalysis);
+    });
   };
 
-  // --- 🚀 NEW UPLOAD LOGIC ---
   const handleImageUpload = (file: File) => {
-    // 1. Create a local preview immediately
     const reader = new FileReader();
     reader.readAsDataURL(file);
 
     reader.onload = () => {
       const dataUri = reader.result as string;
+      const optimisticId = `TEMP-${Date.now()}`;
 
-      // Create a temporary "optimistic" sample to show the user immediately
       const newSample: Sample = {
-        id: `TEMP-${Date.now()}`,
+        id: optimisticId,
         testId: `TEST-${Date.now()}`,
         testNumber: 1,
-        date: new Date().toISOString(),
-        // Defaulting to Delhi NCR as per blueprint
+        dateOfTest: new Date().toISOString(),
         location: {
           name: "New Upload (Delhi NCR)",
           lat: 28.7041,
           lng: 77.1025,
         },
         imageUrl: dataUri,
-        imageHint: "Analysing...",
+        imageHint: "Analyzing...",
         algaeContent: [],
+        explanation: "Analyzing, please wait...",
       };
 
       setSelectedSample(newSample);
-      setAnalysis(null); // Clear previous analysis
+      setAnalysis({
+        algaeAnalysis: [],
+        explanation: "Analyzing, please wait...",
+      });
 
-      // 2. Send to our new API Route
       startTransition(async () => {
         try {
-          const formData = new FormData();
-          formData.append("file", file);
+          const result = await analyzeImage(dataUri);
 
-          // Call the Bridge API (Next.js -> Python -> Genkit)
-          const response = await fetch("/api/analyze", {
-            method: "POST",
-            body: formData,
-          });
+          setAnalysis(result);
 
-          if (!response.ok) {
-            throw new Error(`Analysis failed: ${response.statusText}`);
-          }
-
-          const result = await response.json();
-
-          // 3. Format the result for the UI
-          const formattedAnalysis: AnalysisState = {
-            algaeAnalysis: result.counts.detailed_counts.map((item: any) => ({
-              name: item.algaeName,
-              count: item.count,
-            })),
-            explanation: result.insight, // Insight from Genkit
-          };
-
-          setAnalysis(formattedAnalysis);
-
-          // 4. Save to Firestore
-          // Note: In a real production app, you'd upload the image to Firebase Storage first
-          // and save the URL here, rather than the huge Data URI.
-          await addDoc(waterSamplesCollection, {
+          const newSampleData = {
             testId: newSample.testId,
             testNumber: newSample.testNumber,
             dateOfTest: serverTimestamp(),
             sourceWaterLocationLatitude: newSample.location.lat,
             sourceWaterLocationLongitude: newSample.location.lng,
-            sampleImageUrl: dataUri,
-            algaeContent: formattedAnalysis.algaeAnalysis,
-          });
+            locationName: newSample.location.name,
+            sampleImageUrl: dataUri, // In a real app, this would be an uploaded URL
+            algaeContent: result.algaeAnalysis,
+            explanation: result.explanation,
+          };
 
+          const docRef = await addDoc(
+            collection(firestore, "waterSamples"),
+            newSampleData
+          );
+          
           toast({
             title: "Analysis Complete",
-            description: `Found ${result.counts.total_count} algae microbes. Saved to database.`,
+            description: `Found ${result.algaeAnalysis.reduce((sum, a) => sum + a.count, 0)} algae microbes.`,
           });
+
         } catch (error) {
-          console.error(error);
+          console.error("Analysis failed:", error);
           toast({
             variant: "destructive",
             title: "Analysis Failed",
             description:
-              error instanceof Error ? error.message : "Unknown error",
+              error instanceof Error ? error.message : "An unknown error occurred.",
           });
-
-          // Revert to previous sample if it failed
+          // Revert to previous sample if it exists
           if (samples && samples.length > 0) {
             setSelectedSample(samples[0]);
+          } else {
+            setSelectedSample(null);
           }
         }
       });
@@ -162,34 +158,30 @@ export default function Dashboard() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen bg-background">
-        {" "}
-        {/* Added bg-background for theme consistency */}
-        <Sidebar>
-          <HistorySidebar
-            samples={samples || []}
-            selectedSample={selectedSample}
-            onSelectSample={handleSelectSample}
-            onImageUpload={handleImageUpload}
-            isLoading={isPending || isLoadingSamples}
-          />
-        </Sidebar>
-        <SidebarInset className="bg-transparent">
+    <div className="flex min-h-screen w-full bg-muted/40">
+      <SidebarProvider>
+        <HistorySidebar
+          samples={samples || []}
+          selectedSample={selectedSample}
+          onSelectSample={handleSelectSample}
+          onImageUpload={handleImageUpload}
+          isLoading={isPending || isLoadingSamples}
+        />
+        <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 flex-1">
           <Header />
-          <main className="flex-1 p-6 md:p-8 space-y-8">
+          <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
             <AnalysisSection
               selectedSample={selectedSample}
               analysis={analysis}
-              isLoading={isPending || isLoadingSamples}
+              isLoading={isPending}
             />
             <MapSection
               samples={samples || []}
               selectedSample={selectedSample}
             />
           </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+        </div>
+      </SidebarProvider>
+    </div>
   );
 }

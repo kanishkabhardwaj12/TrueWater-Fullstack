@@ -9,7 +9,7 @@ export type Sample = {
   id: string; // Document ID from Firestore
   testId: string;
   testNumber: number;
-  date: string | Timestamp; // Can be string from old data or Timestamp from Firestore
+  dateOfTest: string | Timestamp; // Stored as Timestamp in Firestore
   location: {
     name: string;
     lat: number;
@@ -18,6 +18,7 @@ export type Sample = {
   imageUrl: string;
   imageHint: string;
   algaeContent: Algae[];
+  explanation: string;
 };
 
 export type AnalysisState = {

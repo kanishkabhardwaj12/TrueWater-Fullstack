@@ -54,7 +54,7 @@ export async function getHistorySummary(
 
   try {
     const formattedHistory = sampleHistory.map((sample) => ({
-      date: typeof sample.date === 'string' ? sample.date : (sample.date as Timestamp).toDate().toISOString(),
+      date: typeof sample.dateOfTest === 'string' ? sample.dateOfTest : (sample.dateOfTest as Timestamp).toDate().toISOString(),
       algaeContent: sample.algaeContent.reduce(
         (acc, algae) => {
           acc[algae.name] = algae.count;

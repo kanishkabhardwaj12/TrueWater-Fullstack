@@ -1,28 +1,43 @@
 'use client';
 
 import {
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarMenuSkeleton,
-} from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2, Upload, Microscope } from 'lucide-react';
-import type { Sample } from '@/lib/types';
-import { format } from 'date-fns';
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIsMobile } from '@/hooks/use-mobile';
+import type { Sample } from '@/lib/types';
+import { format } from 'date-fns';
+import {
+  ChevronLeft,
+  FileText,
+  History,
+  Home,
+  LineChart,
+  Loader2,
+  Package,
+  Package2,
+  PanelLeft,
+  PlusCircle,
+  Search,
+  Settings,
+  ShoppingCart,
+  Upload,
+  Users2,
+} from 'lucide-react';
 
 type HistorySidebarProps = {
   samples: Sample[];
@@ -43,92 +58,127 @@ export default function HistorySidebar({
     const file = event.target.files?.[0];
     if (file) {
       onImageUpload(file);
+      event.target.value = ''; // Reset file input
     }
   };
+  const isMobile = useIsMobile();
 
-  const uniqueSamples = Array.from(
-    new Map(samples.map((s) => [s.testId, s])).values()
-  ).sort(
-    (a, b) =>
-      new Date(typeof b.date === 'string' ? b.date : b.date.toDate()).getTime() -
-      new Date(typeof a.date === 'string' ? a.date : a.date.toDate()).getTime()
+  const uniqueTestIds = new Set<string>();
+  const uniqueSamples = samples.filter((sample) => {
+    if (uniqueTestIds.has(sample.testId)) {
+      return false;
+    }
+    uniqueTestIds.add(sample.testId);
+    return true;
+  });
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b">
+        <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+          <AccordionItem value="item-1" className="border-b-0">
+            <AccordionTrigger className="text-base font-semibold hover:no-underline">
+              Upload Sample
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-2 pt-2">
+                <Input
+                  id="upload-sample-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  disabled={isLoading}
+                />
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  <Label
+                    htmlFor="upload-sample-input"
+                    className={`cursor-pointer ${isLoading ? 'cursor-not-allowed' : ''}`}
+                  >
+                    {isLoading && selectedSample?.id.startsWith('TEMP-') ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="mr-2 h-4 w-4" />
+                    )}
+                    Choose Image
+                  </Label>
+                </Button>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+
+      <div className="flex-1 overflow-auto p-4">
+        <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+          Sample History
+        </h3>
+        <nav className="grid items-start gap-1">
+          {isLoading && samples.length === 0 ? (
+            <>
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </>
+          ) : uniqueSamples.length > 0 ? (
+            uniqueSamples.map((sample) => (
+              <Button
+                key={sample.id}
+                variant={selectedSample?.testId === sample.testId ? 'secondary' : 'ghost'}
+                className="w-full h-auto py-2 flex-col items-start"
+                onClick={() => onSelectSample(sample)}
+              >
+                <div className="font-semibold text-left">
+                  {sample.location?.name?.split(',')[0] || 'Processing...'}
+                </div>
+                <div className="text-xs text-muted-foreground text-left">
+                  ID: {sample.testId.substring(0, 8)}...
+                </div>
+                <div className="text-xs text-muted-foreground text-left">
+                  {sample.dateOfTest ? `Date: ${format(
+                      typeof sample.dateOfTest === 'string'
+                        ? new Date(sample.dateOfTest)
+                        : sample.dateOfTest.toDate(),
+                      'PP'
+                    )}`
+                  : 'Date: N/A'}
+                </div>
+              </Button>
+            ))
+          ) : (
+            <div className="text-center text-sm text-muted-foreground py-10">
+              No samples found.
+            </div>
+          )}
+        </nav>
+      </div>
+    </div>
   );
 
+  if (isMobile) {
+    return (
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button size="icon" variant="outline" className="sm:hidden">
+            <PanelLeft className="h-5 w-5" />
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="sm:max-w-xs p-0">
+          {sidebarContent}
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
-    <>
-      <SidebarHeader className="border-b border-sidebar-border">
-        <h2 className="text-xl font-semibold text-sidebar-foreground">Upload Sample</h2>
-        <div className="space-y-2 pt-2">
-          <div className="flex gap-2">
-            <Input
-              id="upload-sample-input"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-              disabled={isLoading}
-            />
-            <Button asChild variant="outline" className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80">
-              <Label htmlFor="upload-sample-input" className="cursor-pointer">
-                <Upload className="mr-2 h-4 w-4" /> Choose Image
-              </Label>
-            </Button>
-            {isLoading && selectedSample?.id.startsWith('NEW-') && (
-              <Button disabled variant="outline" size="icon" className="bg-sidebar-accent">
-                <Loader2 className="h-4 w-4 animate-spin" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup className="pt-0">
-          <SidebarGroupLabel className="text-base font-semibold text-sidebar-foreground/80">Sample History</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {isLoading && samples.length === 0 ? (
-                <>
-                  <SidebarMenuSkeleton showIcon />
-                  <SidebarMenuSkeleton showIcon />
-                  <SidebarMenuSkeleton showIcon />
-                </>
-              ) : (
-                uniqueSamples.map((sample) => (
-                  <SidebarMenuItem key={sample.testId}>
-                    <SidebarMenuButton
-                      onClick={() => onSelectSample(sample)}
-                      isActive={selectedSample?.testId === sample.testId}
-                      className="w-full h-auto py-3"
-                      size="lg"
-                    >
-                      <Microscope />
-                      <div className="flex flex-col items-start gap-0.5">
-                        <span className="font-semibold text-base">
-                          {sample.location.name.split(',')[0]}
-                        </span>
-                        <span className="text-xs text-sidebar-foreground/60">
-                          ID: {sample.testId.substring(0, 8)}...
-                        </span>
-                        <span className="text-xs text-sidebar-foreground/60">
-                          Last test:{' '}
-                          {format(
-                            new Date(
-                              typeof sample.date === 'string'
-                                ? sample.date
-                                : sample.date.toDate()
-                            ),
-                            'PP'
-                          )}
-                        </span>
-                      </div>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </>
+    <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-card sm:flex">
+      {sidebarContent}
+    </aside>
   );
 }

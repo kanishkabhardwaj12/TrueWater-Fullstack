@@ -40,7 +40,7 @@ export default function AnalysisSection({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
         <CardHeader>
           <CardTitle>Reference: Clean Sample</CardTitle>
         </CardHeader>
@@ -51,7 +51,7 @@ export default function AnalysisSection({
               alt={cleanWaterImage.description}
               width={600}
               height={400}
-              className="rounded-lg object-cover w-full aspect-video"
+              className="rounded-lg object-cover w-full aspect-video hover:scale-105 transition-transform duration-300"
               data-ai-hint={cleanWaterImage.imageHint}
               priority
             />
@@ -60,7 +60,7 @@ export default function AnalysisSection({
           )}
         </CardContent>
       </Card>
-      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
         <CardHeader>
           <CardTitle>Your Uploaded Sample</CardTitle>
         </CardHeader>
@@ -73,11 +73,11 @@ export default function AnalysisSection({
               alt={`Water sample from ${selectedSample.location.name}`}
               width={600}
               height={400}
-              className="rounded-lg object-cover w-full aspect-video"
+              className="rounded-lg object-cover w-full aspect-video hover:scale-105 transition-transform duration-300"
               data-ai-hint={selectedSample.imageHint}
             />
           ) : (
-            <div className="flex items-center justify-center w-full aspect-video bg-muted rounded-lg">
+            <div className="flex items-center justify-center w-full aspect-video bg-muted/50 rounded-lg border-2 border-dashed border-border">
               <div className="text-center">
                 <p className="text-lg font-semibold text-muted-foreground">No Sample Selected</p>
                 <p className="text-sm text-muted-foreground">Upload or choose a sample from the history.</p>
@@ -95,13 +95,13 @@ export default function AnalysisSection({
             <Tabs defaultValue="content" className="w-full">
               <TabsList className="grid w-full grid-cols-3 bg-muted/50">
                 <TabsTrigger value="content">
-                  <Microscope className="mr-2" /> Algae Content
+                  <Microscope className="mr-2 h-4 w-4" /> Algae Content
                 </TabsTrigger>
                 <TabsTrigger value="implications">
-                  <FileText className="mr-2" /> Implications
+                  <FileText className="mr-2 h-4 w-4" /> Implications
                 </TabsTrigger>
                 <TabsTrigger value="history">
-                  <History className="mr-2" /> History Summary
+                  <History className="mr-2 h-4 w-4" /> History Summary
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="content" className="mt-4">
@@ -117,8 +117,8 @@ export default function AnalysisSection({
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Algae Type</TableHead>
-                              <TableHead className="text-right">Count</TableHead>
+                              <TableHead className="font-semibold">Algae Type</TableHead>
+                              <TableHead className="text-right font-semibold">Count</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -127,7 +127,7 @@ export default function AnalysisSection({
                                 <TableRow key={algae.name}>
                                   <TableCell className="font-medium">{algae.name}</TableCell>
                                   <TableCell className="text-right">
-                                    <Badge variant={algae.count > 100 ? "destructive" : "secondary"}>
+                                    <Badge variant={algae.count > 100 ? "destructive" : "secondary"} className="text-sm">
                                       {algae.count}
                                     </Badge>
                                   </TableCell>
@@ -135,7 +135,7 @@ export default function AnalysisSection({
                               ))
                             ) : (
                               <TableRow>
-                                <TableCell colSpan={2} className="text-center h-48">
+                                <TableCell colSpan={2} className="text-center h-48 text-muted-foreground">
                                   No algae content detected or sample not analyzed.
                                 </TableCell>
                               </TableRow>
@@ -149,7 +149,7 @@ export default function AnalysisSection({
               </TabsContent>
               <TabsContent value="implications" className="mt-4">
                  <Card className="border-0 shadow-none">
-                  <CardContent className="p-6 min-h-60">
+                  <CardContent className="p-6 min-h-[240px] bg-muted/30 rounded-md">
                     {isLoading ? (
                        <div className="space-y-2">
                           <Skeleton className="h-4 w-full" />
@@ -157,7 +157,7 @@ export default function AnalysisSection({
                           <Skeleton className="h-4 w-3/4" />
                        </div>
                     ) : (
-                      <p className="text-base text-muted-foreground leading-relaxed">
+                      <p className="text-base text-foreground/80 leading-relaxed">
                         {analysis?.explanation || 'No implications to show. Analyze a sample first.'}
                       </p>
                     )}
@@ -166,7 +166,7 @@ export default function AnalysisSection({
               </TabsContent>
                <TabsContent value="history" className="mt-4">
                  <Card className="border-0 shadow-none">
-                  <CardContent className="p-6 min-h-60">
+                  <CardContent className="p-6 min-h-[240px] bg-muted/30 rounded-md">
                     {isLoading && !analysis?.historySummary ? (
                        <div className="space-y-2">
                           <Skeleton className="h-4 w-full" />
@@ -174,7 +174,7 @@ export default function AnalysisSection({
                           <Skeleton className="h-4 w-3/4" />
                        </div>
                     ) : (
-                      <p className="text-base text-muted-foreground leading-relaxed">
+                      <p className="text-base text-foreground/80 leading-relaxed">
                         {analysis?.historySummary || 'No history summary available. Select a sample with multiple tests.'}
                       </p>
                     )}

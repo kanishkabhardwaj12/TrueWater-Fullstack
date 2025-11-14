@@ -48,11 +48,11 @@ export default function HistorySidebar({
 
   const uniqueSamples = Array.from(
     new Map(samples.map((s) => [s.testId, s])).values()
-  ).sort(
-    (a, b) =>
-      new Date(typeof b.date === 'string' ? b.date : b.date.toDate()).getTime() -
-      new Date(typeof a.date === 'string' ? a.date : a.date.toDate()).getTime()
-  );
+  ).sort((a, b) => {
+    const dateA = a.date ? new Date(typeof a.date === 'string' ? a.date : a.date.toDate()).getTime() : 0;
+    const dateB = b.date ? new Date(typeof b.date === 'string' ? b.date : b.date.toDate()).getTime() : 0;
+    return dateB - dateA;
+  });
 
   return (
     <>
@@ -117,17 +117,19 @@ export default function HistorySidebar({
                         <span className="text-xs text-sidebar-foreground/60">
                           ID: {sample.testId.substring(0, 8)}...
                         </span>
-                        <span className="text-xs text-sidebar-foreground/60">
-                          Last test:{' '}
-                          {format(
-                            new Date(
-                              typeof sample.date === 'string'
-                                ? sample.date
-                                : sample.date.toDate()
-                            ),
-                            'PP'
-                          )}
-                        </span>
+                        {sample.date && (
+                          <span className="text-xs text-sidebar-foreground/60">
+                            Last test:{' '}
+                            {format(
+                              new Date(
+                                typeof sample.date === 'string'
+                                  ? sample.date
+                                  : sample.date.toDate()
+                              ),
+                              'PP'
+                            )}
+                          </span>
+                        )}
                       </div>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

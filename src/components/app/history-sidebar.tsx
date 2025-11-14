@@ -61,7 +61,7 @@ export default function HistorySidebar({
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      <div className="p-4 bg-primary text-primary-foreground rounded-t-lg">
+      <div className="p-4 bg-primary/90 text-primary-foreground rounded-t-lg">
         <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
           <AccordionItem value="item-1" className="border-b-0">
             <AccordionTrigger className="text-base font-semibold hover:no-underline text-primary-foreground">

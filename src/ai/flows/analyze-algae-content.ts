@@ -26,7 +26,7 @@ const AlgaeClassificationSchema = z.object({
 });
 
 const AnalyzeAlgaeContentOutputSchema = z.object({
-  algaeAnalysis: z.array(AlgaeClassificationSchema).describe('An array of algae classifications found in the water sample.'),
+  algaeAnalysis: z.array(AlgaeClassificationSchema).describe('An array of algae classifications found in the water sample.').default([]),
 });
 
 export type AnalyzeAlgaeContentOutput = z.infer<typeof AnalyzeAlgaeContentOutputSchema>;
@@ -43,6 +43,8 @@ const prompt = ai.definePrompt({
 
   Analyze the provided image of a water sample and identify the types and quantities of algae present. Provide a structured analysis of the algal content, listing each identified species and its count.
 
+  If no algae is detected, return an empty array for the algaeAnalysis field.
+
   Image: {{media url=photoDataUri}}
   
   Return the analysis in a structured JSON format.
@@ -57,6 +59,6 @@ const analyzeAlgaeContentFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    return output || { algaeAnalysis: [] };
   }
 );

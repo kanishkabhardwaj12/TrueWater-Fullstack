@@ -99,22 +99,30 @@ export default function Dashboard() {
           const result = await analyzeImage(dataUri);
           setAnalysis(result);
           
-          const newSampleData = {
-            testId: newSample.testId,
-            testNumber: newSample.testNumber,
-            dateOfTest: serverTimestamp(),
-            sourceWaterLocationLatitude: newSample.location.lat,
-            sourceWaterLocationLongitude: newSample.location.lng,
-            sampleImageUrl: newSample.imageUrl, // In a real app, upload to Cloud Storage first
-            algaeContent: result.algaeAnalysis.map(algae => ({ name: algae.name, count: algae.count })),
-          };
+          if (result && result.algaeAnalysis) {
+            const newSampleData = {
+              testId: newSample.testId,
+              testNumber: newSample.testNumber,
+              dateOfTest: serverTimestamp(),
+              sourceWaterLocationLatitude: newSample.location.lat,
+              sourceWaterLocationLongitude: newSample.location.lng,
+              sampleImageUrl: newSample.imageUrl, // In a real app, upload to Cloud Storage first
+              algaeContent: result.algaeAnalysis.map(algae => ({ name: algae.name, count: algae.count })),
+            };
 
-          await addDoc(waterSamplesCollection, newSampleData);
+            await addDoc(waterSamplesCollection, newSampleData);
 
-          toast({
-            title: 'Analysis Complete',
-            description: 'New sample has been saved to the database.',
-          });
+            toast({
+              title: 'Analysis Complete',
+              description: 'New sample has been saved to the database.',
+            });
+          } else {
+             toast({
+              variant: 'destructive',
+              title: 'Analysis Incomplete',
+              description: 'The AI analysis did not return any algae content.',
+            });
+          }
 
         } catch (error) {
           toast({

@@ -20,7 +20,10 @@ export async function analyzeImage(
 
   try {
     const analysisResult = await analyzeAlgaeContent({ photoDataUri });
-    const algaeContentString = analysisResult.algaeAnalysis
+    
+    const algaeContent = analysisResult.algaeAnalysis || [];
+
+    const algaeContentString = algaeContent
       .map((algae) => `${algae.name}: ${algae.count}`)
       .join(', ');
 
@@ -36,7 +39,7 @@ export async function analyzeImage(
     });
 
     return {
-      algaeAnalysis: analysisResult.algaeAnalysis,
+      algaeAnalysis: algaeContent,
       explanation: explanationResult.explanation,
     };
   } catch (error) {

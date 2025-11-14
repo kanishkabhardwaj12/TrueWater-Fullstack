@@ -117,16 +117,16 @@ export default function HistorySidebar({
               <Button
                 key={sample.id}
                 variant={selectedSample?.testId === sample.testId ? 'secondary' : 'ghost'}
-                className="w-full h-auto py-2 flex-col items-start hover:bg-primary/70 data-[variant=ghost]:text-primary-foreground"
+                className="w-full h-auto py-2 flex-col items-start hover:bg-primary/70 data-[variant=ghost]:text-black"
                 onClick={() => onSelectSample(sample)}
               >
                 <div className="font-semibold text-left">
                   {sample.locationName?.split(',')[0] || 'Processing...'}
                 </div>
-                <div className="text-xs text-primary-foreground/70 text-left">
+                <div className="text-xs text-black/70 text-left">
                   ID: {sample.testId.substring(0, 8)}...
                 </div>
-                <div className="text-xs text-primary-foreground/70 text-left">
+                <div className="text-xs text-black/70 text-left">
                   {sample.dateOfTest ? `Date: ${format(
                       typeof sample.dateOfTest === 'string'
                         ? new Date(sample.dateOfTest)

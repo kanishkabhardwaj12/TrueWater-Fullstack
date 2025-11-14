@@ -35,7 +35,7 @@ export default function MapSection({
     );
   }
 
-  const uniqueLocations = Array.from(new Map(samples.map(s => [s.location.name, s.location])).values());
+  const uniqueLocations = Array.from(new Map(samples.filter(s => s.location).map(s => [s.location.name, s.location])).values());
   const center = selectedSample?.location || { lat: 28.7041, lng: 77.1025 };
 
   return (
@@ -59,7 +59,7 @@ export default function MapSection({
                     background={'hsl(var(--primary))'}
                     borderColor={'hsl(var(--card))'}
                     glyphColor={'hsl(var(--card))'}
-                    scale={selectedSample?.location.name === location.name ? 1.5 : 1}
+                    scale={selectedSample?.location?.name === location.name ? 1.5 : 1}
                    />
                 </AdvancedMarker>
               ))}

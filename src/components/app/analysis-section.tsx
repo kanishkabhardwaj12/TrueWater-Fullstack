@@ -54,6 +54,7 @@ export default function AnalysisSection({
               className="rounded-lg object-cover w-full aspect-video"
               data-ai-hint={cleanWaterImage.imageHint}
               unoptimized={true}
+              priority
             />
           ) : (
             <Skeleton className="w-full aspect-video rounded-lg" />
@@ -162,7 +163,7 @@ export default function AnalysisSection({
                       </p>
                     )}
                   </CardContent>
-                </Card>
+                </card>
               </TabsContent>
                <TabsContent value="history" className="mt-4">
                  <Card className="border-0 shadow-none">
@@ -179,7 +180,7 @@ export default function AnalysisSection({
                       </p>
                     )}
                   </CardContent>
-                </Card>
+                </card>
               </TabsContent>
             </Tabs>
           </CardContent>

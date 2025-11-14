@@ -1,56 +1,50 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useTransition, useMemo } from 'react';
-import {
-  collection,
-  query,
-  where,
-  addDoc,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import type { Sample, AnalysisState } from '@/lib/types';
-import { analyzeImage, getHistorySummary } from '@/lib/actions';
-import Header from './header';
-import HistorySidebar from './history-sidebar';
-import AnalysisSection from './analysis-section';
-import MapSection from './map-section';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useTransition } from "react";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import type { Sample, AnalysisState } from "@/lib/types";
+import { getHistorySummary } from "@/lib/actions"; // kept for history summary
+import Header from "./header";
+import HistorySidebar from "./history-sidebar";
+import AnalysisSection from "./analysis-section";
+import MapSection from "./map-section";
+import { useToast } from "@/hooks/use-toast";
 import {
   SidebarProvider,
   Sidebar,
   SidebarInset,
-} from '@/components/ui/sidebar';
+} from "@/components/ui/sidebar";
 
 export default function Dashboard() {
   const firestore = useFirestore();
   const waterSamplesCollection = useMemoFirebase(
-    () => collection(firestore, 'waterSamples'),
+    () => collection(firestore, "waterSamples"),
     [firestore]
   );
-  const {
-    data: samples,
-    isLoading: isLoadingSamples,
-    error: samplesError,
-  } = useCollection<Sample>(waterSamplesCollection);
+  const { data: samples, isLoading: isLoadingSamples } = useCollection<Sample>(
+    waterSamplesCollection
+  );
 
   const [selectedSample, setSelectedSample] = useState<Sample | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
+  // Set initial selection
   useEffect(() => {
     if (samples && samples.length > 0 && !selectedSample) {
       setSelectedSample(samples[0]);
     }
   }, [samples, selectedSample]);
 
+  // Handle history summary when selection changes
   useEffect(() => {
     if (selectedSample && samples) {
       const initialAnalysis: AnalysisState = {
-        algaeAnalysis: selectedSample.algaeContent,
+        algaeAnalysis: selectedSample.algaeContent || [],
         explanation:
-          'This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.',
+          "This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.",
       };
 
       const relatedSamples = samples
@@ -74,59 +68,93 @@ export default function Dashboard() {
     setAnalysis(null);
   };
 
+  // --- 🚀 NEW UPLOAD LOGIC ---
   const handleImageUpload = (file: File) => {
+    // 1. Create a local preview immediately
     const reader = new FileReader();
     reader.readAsDataURL(file);
+
     reader.onload = () => {
       const dataUri = reader.result as string;
 
+      // Create a temporary "optimistic" sample to show the user immediately
       const newSample: Sample = {
-        id: `NEW-${Date.now()}`,
-        testId: `NEW-${Date.now()}`,
+        id: `TEMP-${Date.now()}`,
+        testId: `TEST-${Date.now()}`,
         testNumber: 1,
         date: new Date().toISOString(),
-        location: { name: 'New Upload', lat: 28.7041, lng: 77.1025 }, // Default to Delhi center
+        // Defaulting to Delhi NCR as per blueprint
+        location: {
+          name: "New Upload (Delhi NCR)",
+          lat: 28.7041,
+          lng: 77.1025,
+        },
         imageUrl: dataUri,
-        imageHint: 'uploaded sample',
+        imageHint: "Analysing...",
         algaeContent: [],
       };
 
       setSelectedSample(newSample);
-      setAnalysis(null);
+      setAnalysis(null); // Clear previous analysis
 
+      // 2. Send to our new API Route
       startTransition(async () => {
         try {
-          const result = await analyzeImage(dataUri);
-          setAnalysis(result);
-          
-          const newSampleData = {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          // Call the Bridge API (Next.js -> Python -> Genkit)
+          const response = await fetch("/api/analyze", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Analysis failed: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+
+          // 3. Format the result for the UI
+          const formattedAnalysis: AnalysisState = {
+            algaeAnalysis: result.counts.detailed_counts.map((item: any) => ({
+              name: item.algaeName,
+              count: item.count,
+            })),
+            explanation: result.insight, // Insight from Genkit
+          };
+
+          setAnalysis(formattedAnalysis);
+
+          // 4. Save to Firestore
+          // Note: In a real production app, you'd upload the image to Firebase Storage first
+          // and save the URL here, rather than the huge Data URI.
+          await addDoc(waterSamplesCollection, {
             testId: newSample.testId,
             testNumber: newSample.testNumber,
             dateOfTest: serverTimestamp(),
             sourceWaterLocationLatitude: newSample.location.lat,
             sourceWaterLocationLongitude: newSample.location.lng,
-            sampleImageUrl: newSample.imageUrl, // In a real app, upload to Cloud Storage first
-            algaeContent: result.algaeAnalysis.map(algae => ({ name: algae.name, count: algae.count })),
-          };
-
-          await addDoc(waterSamplesCollection, newSampleData);
-
-          toast({
-            title: 'Analysis Complete',
-            description: 'New sample has been saved to the database.',
+            sampleImageUrl: dataUri,
+            algaeContent: formattedAnalysis.algaeAnalysis,
           });
 
+          toast({
+            title: "Analysis Complete",
+            description: `Found ${result.counts.total_count} algae microbes. Saved to database.`,
+          });
         } catch (error) {
+          console.error(error);
           toast({
-            variant: 'destructive',
-            title: 'Analysis Failed',
+            variant: "destructive",
+            title: "Analysis Failed",
             description:
-              error instanceof Error
-                ? error.message
-                : 'An unknown error occurred.',
+              error instanceof Error ? error.message : "Unknown error",
           });
+
+          // Revert to previous sample if it failed
           if (samples && samples.length > 0) {
-             setSelectedSample(samples[0] || null); // Revert to a known good state
+            setSelectedSample(samples[0]);
           }
         }
       });
@@ -135,7 +163,9 @@ export default function Dashboard() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-background">
+        {" "}
+        {/* Added bg-background for theme consistency */}
         <Sidebar>
           <HistorySidebar
             samples={samples || []}
@@ -153,7 +183,10 @@ export default function Dashboard() {
               analysis={analysis}
               isLoading={isPending || isLoadingSamples}
             />
-            <MapSection samples={samples || []} selectedSample={selectedSample} />
+            <MapSection
+              samples={samples || []}
+              selectedSample={selectedSample}
+            />
           </main>
         </SidebarInset>
       </div>

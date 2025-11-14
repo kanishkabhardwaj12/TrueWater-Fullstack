@@ -18,13 +18,12 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { Sample, AnalysisState } from '@/lib/types';
 import { FileText, Microscope, History } from 'lucide-react';
 
 type AnalysisSectionProps = {
-  selectedSample: Sample | null;
+  selectedSample: (Sample & { location: any; imageUrl: string }) | null;
   analysis: AnalysisState | null;
   isLoading: boolean;
 };
@@ -74,7 +73,6 @@ export default function AnalysisSection({
               width={600}
               height={400}
               className="rounded-lg object-cover w-full aspect-video hover:scale-105 transition-transform duration-300"
-              data-ai-hint={selectedSample.imageHint}
             />
           ) : (
             <div className="flex items-center justify-center w-full aspect-video bg-muted/50 rounded-lg border-2 border-dashed border-border">

@@ -8,10 +8,13 @@ import {
 } from '@vis.gl/react-google-maps';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Sample } from '@/lib/types';
+import { useMemo } from 'react';
+
+type DisplaySample = Sample & { location: any; imageUrl: string };
 
 type MapSectionProps = {
-  samples: Sample[];
-  selectedSample: Sample | null;
+  samples: DisplaySample[];
+  selectedSample: DisplaySample | null;
 };
 
 export default function MapSection({
@@ -35,7 +38,7 @@ export default function MapSection({
     );
   }
 
-  const uniqueLocations = Array.from(new Map(samples.filter(s => s.location).map(s => [s.location.name, s.location])).values());
+  const uniqueLocations = useMemo(() => Array.from(new Map(samples.filter(s => s.location).map(s => [s.location.name, s.location])).values()), [samples]);
   const center = selectedSample?.location || { lat: 28.7041, lng: 77.1025 };
 
   return (

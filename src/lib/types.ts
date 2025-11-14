@@ -9,15 +9,20 @@ export type Sample = {
   id: string; // Document ID from Firestore
   testId: string;
   testNumber: number;
-  date: string | Timestamp; // Can be string from old data or Timestamp from Firestore
-  location: {
+  dateOfTest: Timestamp;
+  sourceWaterLocationLatitude: number;
+  sourceWaterLocationLongitude: number;
+  sampleImageUrl: string;
+  algaeContent: Algae[];
+  // Deprecated fields that might exist on old documents, for backward compatibility
+  date?: string | Timestamp;
+  location?: {
     name: string;
     lat: number;
     lng: number;
   };
-  imageUrl: string;
-  imageHint: string;
-  algaeContent: Algae[];
+  imageHint?: string;
+  imageUrl?: string;
 };
 
 export type AnalysisState = {

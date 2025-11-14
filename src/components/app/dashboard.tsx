@@ -7,6 +7,7 @@ import {
   where,
   addDoc,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { Sample, AnalysisState } from '@/lib/types';
@@ -21,6 +22,24 @@ import {
   Sidebar,
   SidebarInset,
 } from '@/components/ui/sidebar';
+
+// Helper function to get a consistent location object
+const getSampleLocation = (sample: Sample) => {
+  if (sample.location) {
+    return sample.location;
+  }
+  return {
+    name: `Sample from ${sample.sourceWaterLocationLatitude.toFixed(4)}, ${sample.sourceWaterLocationLongitude.toFixed(4)}`,
+    lat: sample.sourceWaterLocationLatitude,
+    lng: sample.sourceWaterLocationLongitude,
+  };
+};
+
+// Helper to get a consistent image URL
+const getSampleImageUrl = (sample: Sample) => {
+    return sample.sampleImageUrl || sample.imageUrl || '';
+}
+
 
 export default function Dashboard() {
   const firestore = useFirestore();
@@ -48,7 +67,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (selectedSample && samples) {
       const initialAnalysis: AnalysisState = {
-        algaeAnalysis: selectedSample.algaeContent,
+        algaeAnalysis: selectedSample.algaeContent || [],
         explanation:
           'This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.',
       };
@@ -79,19 +98,21 @@ export default function Dashboard() {
     reader.readAsDataURL(file);
     reader.onload = () => {
       const dataUri = reader.result as string;
+      const newTestId = `NEW-${Date.now()}`;
 
-      const newSample: Sample = {
-        id: `NEW-${Date.now()}`,
-        testId: `NEW-${Date.now()}`,
+      // This is a temporary client-side object for display purposes.
+      const tempSample: Sample = {
+        id: newTestId,
+        testId: newTestId,
         testNumber: 1,
-        date: new Date().toISOString(),
-        location: { name: 'New Upload', lat: 28.7041, lng: 77.1025 }, // Default to Delhi center
-        imageUrl: dataUri,
-        imageHint: 'uploaded sample',
+        dateOfTest: Timestamp.now(),
+        sourceWaterLocationLatitude: 28.7041,
+        sourceWaterLocationLongitude: 77.1025,
+        sampleImageUrl: dataUri,
         algaeContent: [],
       };
 
-      setSelectedSample(newSample);
+      setSelectedSample(tempSample);
       setAnalysis(null);
 
       startTransition(async () => {
@@ -103,12 +124,12 @@ export default function Dashboard() {
 
             if (waterSamplesCollection) {
               const newSampleData = {
-                testId: newSample.testId,
-                testNumber: newSample.testNumber,
+                testId: tempSample.testId,
+                testNumber: tempSample.testNumber,
                 dateOfTest: serverTimestamp(),
-                sourceWaterLocationLatitude: newSample.location.lat,
-                sourceWaterLocationLongitude: newSample.location.lng,
-                sampleImageUrl: newSample.imageUrl, // In a real app, upload to Cloud Storage first
+                sourceWaterLocationLatitude: tempSample.sourceWaterLocationLatitude,
+                sourceWaterLocationLongitude: tempSample.sourceWaterLocationLongitude,
+                sampleImageUrl: tempSample.sampleImageUrl, // In a real app, upload to Cloud Storage first
                 algaeContent: result.algaeAnalysis.map((algae) => ({
                   name: algae.name,
                   count: algae.count,
@@ -150,13 +171,29 @@ export default function Dashboard() {
       });
     };
   };
+  
+  const displaySamples = useMemo(() => samples?.map(s => ({
+    ...s,
+    location: getSampleLocation(s),
+    imageUrl: getSampleImageUrl(s),
+  })) || [], [samples])
+
+  const displaySelectedSample = useMemo(() => {
+    if (!selectedSample) return null;
+    return {
+      ...selectedSample,
+      location: getSampleLocation(selectedSample),
+      imageUrl: getSampleImageUrl(selectedSample),
+    }
+  }, [selectedSample])
+
 
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <HistorySidebar
-          samples={samples || []}
-          selectedSample={selectedSample}
+          samples={displaySamples}
+          selectedSample={displaySelectedSample}
           onSelectSample={handleSelectSample}
           onImageUpload={handleImageUpload}
           isLoading={isPending || isLoadingSamples}
@@ -166,13 +203,13 @@ export default function Dashboard() {
         <Header />
         <main className="flex-1 p-6 md:p-8 space-y-8">
           <AnalysisSection
-            selectedSample={selectedSample}
+            selectedSample={displaySelectedSample}
             analysis={analysis}
             isLoading={isPending || isLoadingSamples}
           />
           <MapSection
-            samples={samples || []}
-            selectedSample={selectedSample}
+            samples={displaySamples}
+            selectedSample={displaySelectedSample}
           />
         </main>
       </SidebarInset>

@@ -24,10 +24,12 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 
+type DisplaySample = Sample & { location: any; imageUrl: string };
+
 type HistorySidebarProps = {
-  samples: Sample[];
-  selectedSample: Sample | null;
-  onSelectSample: (sample: Sample) => void;
+  samples: DisplaySample[];
+  selectedSample: DisplaySample | null;
+  onSelectSample: (sample: DisplaySample) => void;
   onImageUpload: (file: File) => void;
   isLoading: boolean;
 };
@@ -49,8 +51,8 @@ export default function HistorySidebar({
   const uniqueSamples = Array.from(
     new Map(samples.map((s) => [s.testId, s])).values()
   ).sort((a, b) => {
-    const dateA = a.date ? new Date(typeof a.date === 'string' ? a.date : a.date.toDate()).getTime() : 0;
-    const dateB = b.date ? new Date(typeof b.date === 'string' ? b.date : b.date.toDate()).getTime() : 0;
+    const dateA = a.dateOfTest ? a.dateOfTest.toDate().getTime() : 0;
+    const dateB = b.dateOfTest ? b.dateOfTest.toDate().getTime() : 0;
     return dateB - dateA;
   });
 
@@ -117,15 +119,11 @@ export default function HistorySidebar({
                         <span className="text-xs text-sidebar-foreground/60">
                           ID: {sample.testId.substring(0, 8)}...
                         </span>
-                        {sample.date && (
+                        {sample.dateOfTest && (
                           <span className="text-xs text-sidebar-foreground/60">
                             Last test:{' '}
                             {format(
-                              new Date(
-                                typeof sample.date === 'string'
-                                  ? sample.date
-                                  : sample.date.toDate()
-                              ),
+                              sample.dateOfTest.toDate(),
                               'PP'
                             )}
                           </span>

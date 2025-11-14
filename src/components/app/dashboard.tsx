@@ -93,23 +93,44 @@ function DashboardContent() {
     });
   };
 
-  const handleImageUpload = (file: File) => {
+  const handleImageUpload = (file: File, isRetest = false) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
 
     reader.onload = () => {
       const dataUri = reader.result as string;
-      const optimisticId = `TEMP-${Date.now()}`;
-      const optimisticTestId = `TEST-${Date.now()}`;
 
+      let testId: string;
+      let testNumber: number;
+      let locationName: string;
+      let lat: number;
+      let lon: number;
+
+      if (isRetest && selectedSample && samples) {
+        testId = selectedSample.testId;
+        const relatedSamples = samples.filter(s => s.testId === testId);
+        testNumber = relatedSamples.length + 1;
+        locationName = selectedSample.locationName;
+        lat = selectedSample.sourceWaterLocationLatitude;
+        lon = selectedSample.sourceWaterLocationLongitude;
+      } else {
+        testId = `TEST-${Date.now()}`;
+        testNumber = 1;
+        locationName = "New Upload (Delhi NCR)";
+        lat = 28.7041;
+        lon = 77.1025;
+      }
+      
+      const optimisticId = `TEMP-${Date.now()}`;
+      
       const newSample: Sample = {
         id: optimisticId,
-        testId: optimisticTestId,
-        testNumber: 1,
+        testId: testId,
+        testNumber: testNumber,
         dateOfTest: new Date().toISOString(),
-        locationName: "New Upload (Delhi NCR)",
-        sourceWaterLocationLatitude: 28.7041,
-        sourceWaterLocationLongitude: 77.1025,
+        locationName: locationName,
+        sourceWaterLocationLatitude: lat,
+        sourceWaterLocationLongitude: lon,
         sampleImageUrl: dataUri,
         imageHint: "water sample",
         algaeContent: [],
@@ -242,6 +263,7 @@ function DashboardContent() {
             selectedSample={selectedSample}
             analysis={analysis}
             isLoading={isPending}
+            onImageUpload={handleImageUpload}
           />
           <MapSection
             samples={samples || []}

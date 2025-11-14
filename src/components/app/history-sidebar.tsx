@@ -28,7 +28,7 @@ type HistorySidebarProps = {
   samples: Sample[];
   selectedSample: Sample | null;
   onSelectSample: (sample: Sample) => void;
-  onImageUpload: (file: File) => void;
+  onImageUpload: (file: File, isRetest: boolean) => void;
   isLoading: boolean;
 };
 
@@ -42,7 +42,7 @@ export default function HistorySidebar({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      onImageUpload(file);
+      onImageUpload(file, false);
       event.target.value = ''; // Reset file input
     }
   };

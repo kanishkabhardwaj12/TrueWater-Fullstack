@@ -19,21 +19,26 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { Sample, AnalysisState } from '@/lib/types';
-import { FileText, Microscope, History } from 'lucide-react';
+import { FileText, Microscope, History, TestTube } from 'lucide-react';
+import React from 'react';
 
 type AnalysisSectionProps = {
   selectedSample: Sample | null;
   analysis: AnalysisState | null;
   isLoading: boolean;
+  onImageUpload: (file: File, isRetest: boolean) => void;
 };
 
 export default function AnalysisSection({
   selectedSample,
   analysis,
   isLoading,
+  onImageUpload,
 }: AnalysisSectionProps) {
   const cleanWaterImage = PlaceHolderImages.find(
     (img) => img.id === 'clean-water'
@@ -44,14 +49,45 @@ export default function AnalysisSection({
     0
   );
 
+  const retestInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      onImageUpload(file, true);
+      if(event.target) event.target.value = ''; 
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 gap-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Sample Comparison</CardTitle>
-          <CardDescription>
-            Your uploaded sample vs. a clean reference sample.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Sample Comparison</CardTitle>
+            <CardDescription>
+              Your uploaded sample vs. a clean reference sample.
+            </CardDescription>
+          </div>
+          {selectedSample && !selectedSample.id.startsWith('TEMP-') && (
+             <div>
+               <Input
+                  id="retest-sample-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  disabled={isLoading}
+                  ref={retestInputRef}
+                />
+              <Button asChild variant="outline">
+                <Label htmlFor="retest-sample-input" className="cursor-pointer">
+                  <TestTube className="mr-2 h-4 w-4" />
+                  Retest Sample
+                </Label>
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">

@@ -53,31 +53,17 @@ export async function getHistorySummary(
   }
 
   try {
-    const formattedHistory = sampleHistory.map((sample) => {
-      let dateString: string;
-      if (typeof sample.dateOfTest === 'string') {
-        dateString = sample.dateOfTest;
-      } else if (sample.dateOfTest instanceof Timestamp) {
-        dateString = sample.dateOfTest.toDate().toISOString();
-      } else if (sample.dateOfTest && 'seconds' in sample.dateOfTest && 'nanoseconds' in sample.dateOfTest) {
-        // This handles the plain object from the client
-        dateString = new Timestamp(sample.dateOfTest.seconds, sample.dateOfTest.nanoseconds).toDate().toISOString();
-      } else {
-        dateString = new Date().toISOString(); // Fallback
-      }
-
-      return {
-        date: dateString,
-        algaeContent: sample.algaeContent.reduce(
-          (acc, algae) => {
-            acc[algae.name] = algae.count;
-            return acc;
-          },
-          {} as Record<string, number>
-        ),
-        testNumber: sample.testNumber,
-      };
-    });
+    const formattedHistory = sampleHistory.map((sample) => ({
+      date: sample.dateOfTest.toString(), // dateOfTest is now always a string
+      algaeContent: sample.algaeContent.reduce(
+        (acc, algae) => {
+          acc[algae.name] = algae.count;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
+      testNumber: sample.testNumber,
+    }));
 
     const result = await summarizeSampleHistory({
       sampleHistory: formattedHistory,

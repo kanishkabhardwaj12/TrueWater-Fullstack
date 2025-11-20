@@ -87,7 +87,14 @@ function DashboardContent() {
 
         if (relatedSamples.length > 1) {
           try {
-            const summary = await getHistorySummary(relatedSamples);
+            // Convert Timestamps to strings before sending to server action
+            const serializableSamples = relatedSamples.map(s => ({
+              ...s,
+              dateOfTest: s.dateOfTest instanceof Timestamp 
+                ? s.dateOfTest.toDate().toISOString() 
+                : s.dateOfTest,
+            }));
+            const summary = await getHistorySummary(serializableSamples);
             initialAnalysis.historySummary = summary;
           } catch (error) {
             console.error("Failed to get history summary:", error);

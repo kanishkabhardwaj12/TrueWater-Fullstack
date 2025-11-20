@@ -59,6 +59,10 @@ export default function AnalysisSection({
     }
   };
 
+  const handleRetestClick = () => {
+    retestInputRef.current?.click();
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4">
       <Card>
@@ -80,11 +84,9 @@ export default function AnalysisSection({
                   disabled={isLoading}
                   ref={retestInputRef}
                 />
-              <Button asChild variant="outline">
-                <Label htmlFor="retest-sample-input" className="cursor-pointer">
+              <Button variant="outline" onClick={handleRetestClick} disabled={isLoading}>
                   <TestTube className="mr-2 h-4 w-4" />
                   Retest Sample
-                </Label>
               </Button>
             </div>
           )}

@@ -21,6 +21,7 @@ import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { cn } from "@/lib/utils";
+import AddSampleDialog from "./add-sample-dialog";
 
 function DashboardContent() {
   const firestore = useFirestore();
@@ -29,6 +30,11 @@ function DashboardContent() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const { isMobile, state } = useSidebar();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [uploadContext, setUploadContext] = useState<{
+    file: File;
+    isRetest: boolean;
+  } | null>(null);
 
 
   const waterSamplesCollection = useMemoFirebase(
@@ -93,126 +99,93 @@ function DashboardContent() {
     });
   };
 
-  const handleImageUpload = (file: File, isRetest = false) => {
+  const handleOpenDialog = (file: File, isRetest: boolean) => {
+    setUploadContext({ file, isRetest });
+    setIsDialogOpen(true);
+  };
+  
+  const handleDialogSubmit = ({ locationName }: { locationName: string }) => {
+    if (!uploadContext) return;
+    const { file, isRetest } = uploadContext;
+  
     const reader = new FileReader();
     reader.readAsDataURL(file);
-
+  
     reader.onload = () => {
       const dataUri = reader.result as string;
-
-      let testId: string;
-      let testNumber: number;
-      let locationName: string;
-      let lat: number;
-      let lon: number;
-
-      if (isRetest && selectedSample && samples) {
-        testId = selectedSample.testId;
-        const relatedSamples = samples.filter(s => s.testId === testId);
-        testNumber = relatedSamples.length + 1;
-        locationName = selectedSample.locationName;
-        lat = selectedSample.sourceWaterLocationLatitude;
-        lon = selectedSample.sourceWaterLocationLongitude;
-      } else {
-        testId = `TEST-${Date.now()}`;
-        testNumber = 1;
-        locationName = "New Upload (Delhi NCR)";
-        lat = 28.7041;
-        lon = 77.1025;
-      }
+  
+      const testId = isRetest && selectedSample
+        ? selectedSample.testId
+        : `TEST-${Date.now()}`;
       
-      const optimisticId = `TEMP-${Date.now()}`;
-      
-      const newSample: Sample = {
-        id: optimisticId,
+      const testNumber = isRetest && selectedSample && samples
+        ? samples.filter(s => s.testId === selectedSample.testId).length + 1
+        : 1;
+  
+      const optimisticSample: Sample = {
+        id: `TEMP-${Date.now()}`,
         testId: testId,
         testNumber: testNumber,
         dateOfTest: new Date().toISOString(),
-        locationName: locationName,
-        sourceWaterLocationLatitude: lat,
-        sourceWaterLocationLongitude: lon,
+        locationName: isRetest && selectedSample ? selectedSample.locationName : locationName,
+        sourceWaterLocationLatitude: isRetest && selectedSample ? selectedSample.sourceWaterLocationLatitude : 28.7041,
+        sourceWaterLocationLongitude: isRetest && selectedSample ? selectedSample.sourceWaterLocationLongitude : 77.1025,
         sampleImageUrl: dataUri,
         imageHint: "water sample",
         algaeContent: [],
         explanation: "Analyzing, please wait...",
       };
-
-      setSelectedSample(newSample);
-      setAnalysis({
-        algaeAnalysis: [],
-        explanation: "Analyzing, please wait...",
-      });
-
+  
+      setSelectedSample(optimisticSample);
+      setAnalysis({ algaeAnalysis: [], explanation: "Analyzing, please wait..." });
+  
       startTransition(async () => {
         try {
           const result = await analyzeImage(dataUri);
-
-          if (!result || !result.algaeAnalysis) {
-            throw new Error("Analysis returned an invalid result.");
-          }
-
-          setAnalysis(result);
-
+  
           if (!firestore) {
             throw new Error("Firestore is not initialized");
           }
-          
+  
           const newSampleData = {
-            testId: newSample.testId,
-            testNumber: newSample.testNumber,
+            testId: optimisticSample.testId,
+            testNumber: optimisticSample.testNumber,
             dateOfTest: serverTimestamp(),
-            sourceWaterLocationLatitude: newSample.sourceWaterLocationLatitude,
-            sourceWaterLocationLongitude: newSample.sourceWaterLocationLongitude,
-            locationName: newSample.locationName,
-            sampleImageUrl: dataUri, // In a real app, this would be an uploaded URL
+            sourceWaterLocationLatitude: optimisticSample.sourceWaterLocationLatitude,
+            sourceWaterLocationLongitude: optimisticSample.sourceWaterLocationLongitude,
+            locationName: optimisticSample.locationName,
+            sampleImageUrl: dataUri, // In a real app, this should be an uploaded URL
             algaeContent: result.algaeAnalysis,
             explanation: result.explanation,
           };
-
+          
           const samplesCollection = collection(firestore, "waterSamples");
-
-          addDoc(samplesCollection, newSampleData).catch(
+          await addDoc(samplesCollection, newSampleData).catch(
             async (serverError) => {
               const permissionError = new FirestorePermissionError({
                 path: samplesCollection.path,
                 operation: "create",
                 requestResourceData: newSampleData,
               });
-
+  
               errorEmitter.emit("permission-error", permissionError);
-
-              toast({
-                variant: "destructive",
-                title: "Permission Denied",
-                description: "You do not have permission to save new samples.",
-              });
-              // Revert optimistic update
-              if (samples && samples.length > 0) {
-                handleSelectSample(samples[0]);
-              } else {
-                setSelectedSample(null);
-              }
             }
           );
-
+  
+          setAnalysis(result);
+  
           toast({
             title: "Analysis Complete",
-            description: `Found ${result.algaeAnalysis.reduce(
-              (sum, a) => sum + a.count,
-              0
-            )} algae microbes. Saving sample...`,
+            description: `Found ${result.algaeAnalysis.reduce((sum, a) => sum + a.count, 0)} algae microbes. Sample saved.`,
           });
         } catch (error) {
           console.error("Analysis or saving failed:", error);
           toast({
             variant: "destructive",
             title: "Analysis Failed",
-            description:
-              error instanceof Error
-                ? error.message
-                : "An unknown error occurred during analysis.",
+            description: error instanceof Error ? error.message : "An unknown error occurred during analysis.",
           });
-          // Revert to previous sample if it exists
+          // Revert to previous state
           if (samples && samples.length > 0) {
             handleSelectSample(samples[0]);
           } else {
@@ -221,8 +194,11 @@ function DashboardContent() {
         }
       });
     };
+  
+    setIsDialogOpen(false);
+    setUploadContext(null);
   };
-
+  
   if (isLoadingSamples && !samples) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -243,12 +219,21 @@ function DashboardContent() {
   }
 
   return (
+    <>
+    <AddSampleDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSubmit={handleDialogSubmit}
+        isRetest={uploadContext?.isRetest ?? false}
+        sampleLocation={selectedSample?.locationName}
+        isLoading={isPending}
+      />
     <div className="min-h-screen w-full bg-muted/40">
       <HistorySidebar
         samples={samples || []}
         selectedSample={selectedSample}
         onSelectSample={handleSelectSample}
-        onImageUpload={handleImageUpload}
+        onImageUpload={handleOpenDialog}
         isLoading={isPending || isLoadingSamples}
       />
       <div
@@ -263,7 +248,7 @@ function DashboardContent() {
             selectedSample={selectedSample}
             analysis={analysis}
             isLoading={isPending}
-            onImageUpload={handleImageUpload}
+            onImageUpload={handleOpenDialog}
           />
           <MapSection
             samples={samples || []}
@@ -272,6 +257,7 @@ function DashboardContent() {
         </main>
       </div>
     </div>
+    </>
   );
 }
 

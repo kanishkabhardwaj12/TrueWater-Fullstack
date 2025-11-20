@@ -165,7 +165,7 @@ export default function AnalysisSection({
                       <Skeleton className="h-4 w-10 inline-block ml-2" />
                     ) : (
                       <Badge variant="secondary" className="ml-2">
-                        {totalCount}
+                        {totalCount ?? 0}
                       </Badge>
                     )}
                   </CardDescription>

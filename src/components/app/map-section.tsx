@@ -2,7 +2,7 @@
 
 import {
   APIProvider,
-  Map,
+  Map as GoogleMap,
   AdvancedMarker,
   Pin,
 } from '@vis.gl/react-google-maps';
@@ -49,7 +49,7 @@ export default function MapSection({
       <CardContent>
         <div className="h-[500px] w-full rounded-lg overflow-hidden">
           <APIProvider apiKey={apiKey}>
-            <Map
+            <GoogleMap
               center={center}
               zoom={11}
               mapId="truewater-map"
@@ -66,7 +66,7 @@ export default function MapSection({
                    />
                 </AdvancedMarker>
               ))}
-            </Map>
+            </GoogleMap>
           </APIProvider>
         </div>
       </CardContent>

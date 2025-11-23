@@ -2,7 +2,7 @@
   "placeholderImages": [
     {
       "id": "clean-water",
-      "description": "A microscopic view of a clean water sample with minimal particles.",
+      "description": "A microscopic view of a clean water sample with scattered small particles.",
       "imageUrl": "/clean-sample.png",
       "imageHint": "microscope water"
     }

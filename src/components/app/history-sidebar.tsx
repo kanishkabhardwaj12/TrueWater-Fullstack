@@ -70,10 +70,10 @@ export default function HistorySidebar({
       <SidebarHeader className="border-b border-sidebar-border p-0">
         <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
           <AccordionItem value="item-1" className="border-none">
-            <AccordionTrigger className="p-4 text-xl font-semibold text-sidebar-foreground hover:no-underline">
+            <AccordionTrigger className="p-4 text-xl font-semibold text-sidebar-foreground hover:no-underline hover:bg-sidebar-accent/50 transition-colors">
               Actions
             </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4 space-y-4">
+            <AccordionContent className="px-4 pb-4 space-y-4 bg-sidebar-background/50">
               <div className="space-y-2">
                 <Label htmlFor="upload-new-input" className='text-sm font-medium text-sidebar-foreground/80'>New Sample</Label>
                 <Input
@@ -84,7 +84,7 @@ export default function HistorySidebar({
                   onChange={(e) => handleFileChange(e, false)}
                   disabled={isLoading}
                 />
-                <Button asChild variant="outline" className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80" disabled={isLoading}>
+                <Button asChild variant="outline" className="w-full bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/80" disabled={isLoading}>
                   <Label htmlFor="upload-new-input" className="cursor-pointer">
                     <Upload className="mr-2 h-4 w-4" /> Upload Image
                   </Label>
@@ -101,15 +101,15 @@ export default function HistorySidebar({
                   onChange={(e) => handleFileChange(e, true)}
                   disabled={isLoading || !selectedSample}
                 />
-                <Button asChild variant="outline" className="w-full bg-sidebar-accent/70 text-sidebar-accent-foreground hover:bg-sidebar-accent/60" disabled={isLoading || !selectedSample}>
-                   <Label htmlFor="retest-input" className={`cursor-pointer ${!selectedSample || isLoading ? 'cursor-not-allowed' : ''}`}>
+                <Button asChild variant="outline" className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80" disabled={isLoading || !selectedSample}>
+                   <Label htmlFor="retest-input" className={`cursor-pointer ${!selectedSample || isLoading ? 'cursor-not-allowed text-muted-foreground' : ''}`}>
                     <RefreshCw className="mr-2 h-4 w-4" /> Retest with Image
                   </Label>
                 </Button>
               </div>
 
               {isLoading && selectedSample?.id.startsWith('TEMP-') && (
-                <div className="flex items-center justify-center text-sidebar-foreground/80">
+                <div className="flex items-center justify-center text-sidebar-foreground/80 pt-2">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   <span>Analyzing...</span>
                 </div>
@@ -120,15 +120,15 @@ export default function HistorySidebar({
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="pt-0">
-          <SidebarGroupLabel className="text-base font-semibold text-sidebar-foreground/80">Sample History</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-base font-semibold text-sidebar-foreground/80 px-4 py-2">Sample History</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {isLoading && samples.length === 0 ? (
-                <>
+                <div className="p-2 space-y-2">
                   <SidebarMenuSkeleton showIcon />
                   <SidebarMenuSkeleton showIcon />
                   <SidebarMenuSkeleton showIcon />
-                </>
+                </div>
               ) : (
                 uniqueSamples.map((sample) => (
                   <SidebarMenuItem key={sample.testId}>

@@ -24,6 +24,11 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { Sample, AnalysisState } from '@/lib/types';
 import { FileText, Microscope, History } from 'lucide-react';
   
+interface AnalysisSectionProps {
+  selectedSample: (Sample & { location: any; imageUrl: string }) | null;
+  analysis: AnalysisState | null;
+  isLoading: boolean;
+}
 
 export default function AnalysisSection({
   selectedSample,
@@ -44,9 +49,9 @@ export default function AnalysisSection({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+      <Card className="shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-transparent hover:border-primary">
         <CardHeader>
-          <CardTitle>Reference: Clean Sample</CardTitle>
+          <CardTitle className="text-xl font-bold tracking-tight">Reference: Clean Sample</CardTitle>
         </CardHeader>
         <CardContent>
           {cleanWaterImage ? (
@@ -64,9 +69,9 @@ export default function AnalysisSection({
           )}
         </CardContent>
       </Card>
-      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+      <Card className="shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-transparent hover:border-primary">
         <CardHeader>
-          <CardTitle>Your Uploaded Sample</CardTitle>
+          <CardTitle className="text-xl font-bold tracking-tight">Your Uploaded Sample</CardTitle>
         </CardHeader>
         <CardContent>
            <div className="relative">
@@ -87,9 +92,9 @@ export default function AnalysisSection({
               </>
             ) : (
               <div className="flex items-center justify-center w-full aspect-video bg-muted/50 rounded-lg border-2 border-dashed border-border">
-                <div className="text-center">
-                  <p className="text-lg font-semibold text-muted-foreground">No Sample Selected</p>
-                  <p className="text-sm text-muted-foreground">Upload or choose a sample from the history.</p>
+                <div className="text-center p-4">
+                  <p className="text-xl font-semibold text-muted-foreground">No Sample Selected</p>
+                  <p className="text-md text-muted-foreground mt-2">Upload or choose a sample from the history to begin.</p>
                 </div>
               </div>
             )}
@@ -97,24 +102,24 @@ export default function AnalysisSection({
         </CardContent>
       </Card>
       <div className="lg:col-span-2">
-        <Card className="shadow-lg">
+        <Card className="shadow-xl border-0">
           <CardHeader>
-            <CardTitle>AI-Powered Analysis & Insights</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight text-center">AI-Powered Analysis & Insights</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="content" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 bg-muted/50">
-                <TabsTrigger value="content">
-                  <Microscope className="mr-2 h-4 w-4" /> Algae Content
+              <TabsList className="grid w-full grid-cols-3 bg-muted/50 rounded-lg h-12 p-1">
+                <TabsTrigger value="content" className="text-base font-semibold rounded-md">
+                  <Microscope className="mr-2 h-5 w-5" /> Algae Content
                 </TabsTrigger>
-                <TabsTrigger value="implications">
-                  <FileText className="mr-2 h-4 w-4" /> Implications
+                <TabsTrigger value="implications" className="text-base font-semibold rounded-md">
+                  <FileText className="mr-2 h-5 w-5" /> Implications
                 </TabsTrigger>
-                <TabsTrigger value="history">
-                  <History className="mr-2 h-4 w-4" /> History Summary
+                <TabsTrigger value="history" className="text-base font-semibold rounded-md">
+                  <History className="mr-2 h-5 w-5" /> History Summary
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="content" className="mt-4">
+              <TabsContent value="content" className="mt-6">
                 <Card className="border-0 shadow-none">
                   <CardContent className="p-0">
                     {isLoading && !analysis ? (
@@ -125,18 +130,18 @@ export default function AnalysisSection({
                     ) : (
                         <Table>
                           <TableHeader>
-                            <TableRow>
-                              <TableHead className="font-semibold">Algae Type</TableHead>
-                              <TableHead className="text-right font-semibold">Count</TableHead>
+                            <TableRow className="hover:bg-transparent">
+                              <TableHead className="text-lg font-semibold text-foreground/90">Algae Type</TableHead>
+                              <TableHead className="text-right text-lg font-semibold text-foreground/90">Count</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {(analysis?.algaeAnalysis.length ?? 0) > 0 ? (
                               analysis?.algaeAnalysis.map((algae) => (
-                                <TableRow key={algae.name}>
+                                <TableRow key={algae.name} className="text-base">
                                   <TableCell className="font-medium">{algae.name}</TableCell>
                                   <TableCell className="text-right">
-                                    <Badge variant={algae.count > 100 ? "destructive" : "secondary"} className="text-sm">
+                                    <Badge variant={algae.count > 100 ? "destructive" : "secondary"} className="text-md px-3 py-1">
                                       {algae.count}
                                     </Badge>
                                   </TableCell>
@@ -144,7 +149,7 @@ export default function AnalysisSection({
                               ))
                             ) : (
                               <TableRow>
-                                <TableCell colSpan={2} className="text-center h-48 text-muted-foreground">
+                                <TableCell colSpan={2} className="text-center h-48 text-muted-foreground text-lg">
                                   No algae content detected or sample not analyzed.
                                 </TableCell>
                               </TableRow>
@@ -155,34 +160,34 @@ export default function AnalysisSection({
                   </CardContent>
                 </Card>
               </TabsContent>
-              <TabsContent value="implications" className="mt-4">
+              <TabsContent value="implications" className="mt-6">
                  <Card className="border-0 shadow-none">
-                  <CardContent className="p-6 min-h-[240px] bg-muted/30 rounded-md">
+                  <CardContent className="p-6 min-h-[240px] bg-muted/30 rounded-lg">
                     {isLoading || analysis?.explanation === 'Loading explanation...' ? (
-                       <div className="space-y-2">
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-3/4" />
+                       <div className="space-y-3 p-2">
+                          <Skeleton className="h-5 w-full" />
+                          <Skeleton className="h-5 w-full" />
+                          <Skeleton className="h-5 w-4/5" />
                        </div>
                     ) : (
-                      <p className="text-base text-foreground/80 leading-relaxed">
+                      <p className="text-lg text-foreground/90 leading-relaxed whitespace-pre-wrap">
                         {analysis?.explanation || 'No implications to show. Analyze a sample first.'}
                       </p>
                     )}
                   </CardContent>
                 </Card>
               </TabsContent>
-               <TabsContent value="history" className="mt-4">
+               <TabsContent value="history" className="mt-6">
                  <Card className="border-0 shadow-none">
-                  <CardContent className="p-6 min-h-[240px] bg-muted/30 rounded-md">
+                  <CardContent className="p-6 min-h-[240px] bg-muted/30 rounded-lg">
                     {isLoading || analysis?.historySummary === 'Loading history...' ? (
-                       <div className="space-y-2">
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-3/4" />
+                       <div className="space-y-3 p-2">
+                          <Skeleton className="h-5 w-full" />
+                          <Skeleton className="h-5 w-full" />
+                          <Skeleton className="h-5 w-4/5" />
                        </div>
                     ) : (
-                      <p className="text-base text-foreground/80 leading-relaxed">
+                      <p className="text-lg text-foreground/90 leading-relaxed whitespace-pre-wrap">
                         {analysis?.historySummary || 'No history summary available. Select a sample with multiple tests.'}
                       </p>
                     )}

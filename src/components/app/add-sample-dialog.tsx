@@ -45,15 +45,17 @@ export function AddSampleDialog({
   const [longitude, setLongitude] = useState(77.1025);
 
   useEffect(() => {
-    if (isRetest && selectedSample) {
-      setLocationName(selectedSample.locationName || '');
-      setLatitude(selectedSample.sourceWaterLocationLatitude);
-      setLongitude(selectedSample.sourceWaterLocationLongitude);
-    } else {
-        // Reset for new sample
-        setLocationName('');
-        setLatitude(28.7041);
-        setLongitude(77.1025);
+    if (isOpen) {
+        if (isRetest && selectedSample) {
+            setLocationName(selectedSample.locationName || '');
+            setLatitude(selectedSample.sourceWaterLocationLatitude);
+            setLongitude(selectedSample.sourceWaterLocationLongitude);
+        } else {
+            // Reset for new sample
+            setLocationName('');
+            setLatitude(28.7041);
+            setLongitude(77.1025);
+        }
     }
   }, [isOpen, isRetest, selectedSample]);
 

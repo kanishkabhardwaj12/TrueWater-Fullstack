@@ -177,6 +177,7 @@ export default function Dashboard() {
                     setAnalysis({
                         algaeAnalysis: [],
                         explanation: 'No algae content was detected.',
+                        historySummary: ''
                     });
                     toast({
                         variant: 'default',

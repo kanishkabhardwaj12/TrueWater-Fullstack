@@ -24,24 +24,15 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { Sample, AnalysisState, BoundingBox as BboxType } from '@/lib/types';
 import { FileText, Microscope, History } from 'lucide-react';
 
-type AnalysisSectionProps = {
-  selectedSample: (Sample & { location: any; imageUrl: string }) | null;
-  analysis: AnalysisState | null;
-  isLoading: boolean;
-};
-
 const BoundingBox = ({ box, imageRef }: { box: BboxType, imageRef: React.RefObject<HTMLImageElement> }) => {
     const [style, setStyle] = useState<React.CSSProperties>({ display: 'none' });
   
     useEffect(() => {
       const calculatePosition = () => {
         if (imageRef.current) {
-          const { naturalWidth, naturalHeight, clientWidth, clientHeight } = imageRef.current;
+          const { clientWidth, clientHeight } = imageRef.current;
           
-          if (naturalWidth === 0 || naturalHeight === 0) return;
-          
-          const widthRatio = clientWidth / naturalWidth;
-          const heightRatio = clientHeight / naturalHeight;
+          if (clientWidth === 0 || clientHeight === 0) return;
   
           setStyle({
             position: 'absolute',
@@ -58,19 +49,21 @@ const BoundingBox = ({ box, imageRef }: { box: BboxType, imageRef: React.RefObje
       const imgElement = imageRef.current;
   
       if (imgElement) {
+        // The 'load' event listener handles both the initial load and subsequent loads.
+        const handleLoad = () => calculatePosition();
+        imgElement.addEventListener('load', handleLoad);
+        
+        // If the image is already complete (e.g., cached), calculate position immediately.
         if (imgElement.complete) {
           calculatePosition();
-        } else {
-          imgElement.onload = calculatePosition;
         }
   
-        window.addEventListener('resize', calculatePosition);
+        const resizeObserver = new ResizeObserver(calculatePosition);
+        resizeObserver.observe(imgElement);
   
         return () => {
-          if (imgElement) {
-            imgElement.onload = null;
-          }
-          window.removeEventListener('resize', calculatePosition);
+          imgElement.removeEventListener('load', handleLoad);
+          resizeObserver.unobserve(imgElement);
         };
       }
     }, [box, imageRef]);
@@ -95,8 +88,6 @@ export default function AnalysisSection({
     // When the selected sample or analysis changes, update the key to force re-render
     setKey(Date.now());
   }, [selectedSample, analysis]);
-
-  const allBoundingBoxes = analysis?.algaeAnalysis?.flatMap(algae => algae.boundingBoxes || []) || [];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -134,10 +125,11 @@ export default function AnalysisSection({
                   key={selectedSample.id} // Force re-mount on sample change
                   ref={uploadedImageRef}
                   src={selectedSample.imageUrl}
-                  alt={`Water sample from ${selectedSample.location.name}`}
+                  alt={`Water sample from ${selectedSample.location?.name ?? 'Unknown'}`}
                   width={600}
                   height={400}
                   className="rounded-lg object-cover w-full aspect-video hover:scale-105 transition-transform duration-300"
+                  crossOrigin="anonymous" // Add this for images from different origins
                 />
                 {!isLoading && (analysis?.algaeAnalysis || []).flatMap((algae) =>
                   (algae.boundingBoxes || []).map((box, index) => (

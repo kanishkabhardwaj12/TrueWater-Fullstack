@@ -89,8 +89,7 @@ export default function AnalysisSection({
 
   const uploadedImageRef = useRef<HTMLImageElement>(null);
 
-  const allBoundingBoxes = analysis?.algaeAnalysis
-    .flatMap(algae => algae.boundingBoxes || []) || [];
+  const allBoundingBoxes = analysis?.algaeAnalysis?.flatMap(algae => algae.boundingBoxes || []) || [];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

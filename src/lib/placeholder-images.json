@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "clean-water",
-      "description": "A view of dark, swirling water with a metallic sheen and circular patterns.",
-      "imageUrl": "https://images.unsplash.com/photo-1620121692029-d088224ddc74?q=80&w=1932&auto=format&fit=crop",
-      "imageHint": "dark water"
+      "description": "A microscopic view of a clean water sample with a few particles.",
+      "imageUrl": "https://storage.googleapis.com/studiopaper-images/assets/d193d395-653a-4467-b520-21e25d2b1f80",
+      "imageHint": "microscopic water"
     }
   ]
 }

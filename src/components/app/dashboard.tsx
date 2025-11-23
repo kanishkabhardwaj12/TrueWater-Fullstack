@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useTransition, useMemo } from 'react';
@@ -6,15 +7,10 @@ import {
   addDoc,
   serverTimestamp,
   Timestamp,
-  getDocs,
-  query,
-  where,
-  limit,
-  orderBy,
 } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { Sample, AnalysisState } from '@/lib/types';
-import { analyzeImage, getHistorySummary } from '@/lib/actions';
+import { analyzeImage, getHistorySummary, getAnalysisExplanation } from '@/lib/actions';
 import Header from './header';
 import HistorySidebar from './history-sidebar';
 import AnalysisSection from './analysis-section';
@@ -71,25 +67,29 @@ export default function Dashboard() {
       
       const initialAnalysis: AnalysisState = {
         algaeAnalysis: sample.algaeContent || [],
-        explanation: 'This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.',
+        explanation: 'Loading explanation...',
         historySummary: 'Loading history...'
       };
       setAnalysis(initialAnalysis);
 
-      // Client-side filtering and sorting
+      // Fetch explanation
+      const explanation = await getAnalysisExplanation(sample.algaeContent || []);
+      setAnalysis(prev => (prev ? { ...prev, explanation } : null));
+
+      // Client-side filtering and sorting for history
       const relatedSamples = samples
         .filter(s => s.testId === sample.testId)
-        .sort((a, b) => b.testNumber - a.testNumber);
+        .sort((a, b) => a.testNumber - b.testNumber);
 
       if (relatedSamples.length > 1) {
          const serializableHistory = relatedSamples.map(s => ({
           ...s,
-          dateOfTest: s.dateOfTest instanceof Timestamp ? s.dateOfTest.toDate().toISOString() : s.dateOfTest,
+          dateOfTest: s.dateOfTest.toDate().toISOString(),
         }));
-        const summary = await getHistorySummary(serializableHistory as any);
-        setAnalysis(prev => ({ ...prev!, historySummary: summary }));
+        const summary = await getHistorySummary(serializableHistory);
+        setAnalysis(prev => (prev ? { ...prev, historySummary: summary } : null));
       } else {
-        setAnalysis(prev => ({ ...prev!, historySummary: 'No previous test history for this sample.' }));
+        setAnalysis(prev => (prev ? { ...prev, historySummary: 'No previous test history for this sample.' } : null));
       }
     });
   };
@@ -192,7 +192,8 @@ export default function Dashboard() {
                     description: error instanceof Error ? error.message : 'An unknown error occurred.',
                 });
                  if (samples && samples.length > 0) {
-                    handleSelectSample(samples[0]); // Revert to a known good state
+                    const sortedSamples = [...samples].sort((a,b) => b.dateOfTest.toMillis() - a.dateOfTest.toMillis());
+                    handleSelectSample(sortedSamples[0]);
                 }
             } finally {
                 setDialogOpen(false);

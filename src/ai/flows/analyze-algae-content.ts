@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -21,10 +22,10 @@ const AnalyzeAlgaeContentInputSchema = z.object({
 export type AnalyzeAlgaeContentInput = z.infer<typeof AnalyzeAlgaeContentInputSchema>;
 
 const BoundingBoxSchema = z.object({
-  x: z.number().describe('The x-coordinate of the top-left corner of the bounding box.'),
-  y: z.number().describe('The y-coordinate of the top-left corner of the bounding box.'),
-  width: z.number().describe('The width of the bounding box.'),
-  height: z.number().describe('The height of the bounding box.'),
+  x: z.number().describe('The x-coordinate of the top-left corner of the bounding box, as a float between 0.0 and 1.0.'),
+  y: z.number().describe('The y-coordinate of the top-left corner of the bounding box, as a float between 0.0 and 1.0.'),
+  width: z.number().describe('The width of the bounding box, as a float between 0.0 and 1.0.'),
+  height: z.number().describe('The height of the bounding box, as a float between 0.0 and 1.0.'),
 });
 
 const AlgaeClassificationSchema = z.object({
@@ -49,7 +50,7 @@ const prompt = ai.definePrompt({
   output: {schema: AnalyzeAlgaeContentOutputSchema},
   prompt: `You are an expert in identifying and quantifying algae species in water samples from images.
 
-  Analyze the provided image of a water sample. Identify the types and quantities of algae present. For each identified algae instance, provide its species name and a bounding box (x, y, width, height) relative to the image dimensions (e.g., values between 0.0 and 1.0).
+  Analyze the provided image of a water sample. Identify the types and quantities of algae present. For each identified algae instance, provide its species name and a bounding box (x, y, width, height) relative to the image dimensions. The coordinates and dimensions must be floats between 0.0 and 1.0.
   
   Group the results by algae name, provide a total count for each, and list all bounding boxes for that species.
 

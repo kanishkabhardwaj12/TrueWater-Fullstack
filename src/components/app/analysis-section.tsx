@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -20,7 +21,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import type { Sample, AnalysisState, Algae } from '@/lib/types';
+import type { Sample, AnalysisState, BoundingBox as BboxType } from '@/lib/types';
 import { FileText, Microscope, History } from 'lucide-react';
 
 type AnalysisSectionProps = {
@@ -29,54 +30,59 @@ type AnalysisSectionProps = {
   isLoading: boolean;
 };
 
-const BoundingBox = ({ box, imageRef }: { box: { x: number, y: number, width: number, height: number }, imageRef: React.RefObject<HTMLImageElement> }) => {
-  const [position, setPosition] = useState({ left: 0, top: 0, width: 0, height: 0 });
-
-  useEffect(() => {
-    const calculatePosition = () => {
-      if (imageRef.current) {
-        const { naturalWidth, naturalHeight, clientWidth, clientHeight } = imageRef.current;
-        const widthRatio = clientWidth / naturalWidth;
-        const heightRatio = clientHeight / naturalHeight;
-
-        setPosition({
-          left: box.x * naturalWidth * widthRatio,
-          top: box.y * naturalHeight * heightRatio,
-          width: box.width * naturalWidth * widthRatio,
-          height: box.height * naturalHeight * heightRatio,
-        });
-      }
-    };
-    
-    calculatePosition();
-
-    const imgElement = imageRef.current;
-    if (imgElement) {
-      imgElement.addEventListener('resize', calculatePosition);
-      window.addEventListener('resize', calculatePosition);
-
-      return () => {
-        imgElement.removeEventListener('resize', calculatePosition);
-        window.removeEventListener('resize', calculatePosition);
+const BoundingBox = ({ box, imageRef }: { box: BboxType, imageRef: React.RefObject<HTMLImageElement> }) => {
+    const [style, setStyle] = useState<React.CSSProperties>({ display: 'none' });
+  
+    useEffect(() => {
+      const calculatePosition = () => {
+        if (imageRef.current) {
+          const { naturalWidth, naturalHeight, clientWidth, clientHeight } = imageRef.current;
+          
+          if (naturalWidth === 0 || naturalHeight === 0) {
+            // Image not loaded yet, try again
+            return;
+          }
+          
+          const widthRatio = clientWidth / naturalWidth;
+          const heightRatio = clientHeight / naturalHeight;
+  
+          setStyle({
+            position: 'absolute',
+            left: `${box.x * naturalWidth * widthRatio}px`,
+            top: `${box.y * naturalHeight * heightRatio}px`,
+            width: `${box.width * naturalWidth * widthRatio}px`,
+            height: `${box.height * naturalHeight * heightRatio}px`,
+            border: '2px solid yellow',
+          });
+        }
       };
-    }
-
-  }, [box, imageRef]);
-
-  if (!position.width) return null;
-
-  return (
-    <div
-      className="absolute border-2 border-yellow-400"
-      style={{
-        left: `${position.left}px`,
-        top: `${position.top}px`,
-        width: `${position.width}px`,
-        height: `${position.height}px`,
-      }}
-    />
-  );
+      
+      const imgElement = imageRef.current;
+  
+      if (imgElement) {
+        // If the image is already loaded, calculate immediately.
+        if (imgElement.complete) {
+          calculatePosition();
+        } else {
+          // Otherwise, wait for it to load.
+          imgElement.onload = calculatePosition;
+        }
+  
+        // Recalculate on window resize.
+        window.addEventListener('resize', calculatePosition);
+  
+        return () => {
+          if (imgElement) {
+            imgElement.onload = null;
+          }
+          window.removeEventListener('resize', calculatePosition);
+        };
+      }
+    }, [box, imageRef]);
+  
+    return <div style={style} />;
 };
+  
 
 export default function AnalysisSection({
   selectedSample,
@@ -88,6 +94,12 @@ export default function AnalysisSection({
   );
 
   const uploadedImageRef = useRef<HTMLImageElement>(null);
+  
+  const [key, setKey] = useState(Date.now());
+  useEffect(() => {
+    // When the selected sample or analysis changes, update the key to force re-render
+    setKey(Date.now());
+  }, [selectedSample, analysis]);
 
   const allBoundingBoxes = analysis?.algaeAnalysis?.flatMap(algae => algae.boundingBoxes || []) || [];
 
@@ -124,19 +136,16 @@ export default function AnalysisSection({
             ) : selectedSample ? (
               <>
                 <Image
+                  key={selectedSample.id} // Force re-mount on sample change
                   ref={uploadedImageRef}
                   src={selectedSample.imageUrl}
                   alt={`Water sample from ${selectedSample.location.name}`}
                   width={600}
                   height={400}
                   className="rounded-lg object-cover w-full aspect-video hover:scale-105 transition-transform duration-300"
-                  onLoad={() => {
-                    // Force re-calculation of bounding boxes on image load
-                    allBoundingBoxes.forEach(box => BoundingBox({ box, imageRef: uploadedImageRef }))
-                  }}
                 />
                 {!isLoading && allBoundingBoxes.map((box, index) => (
-                  <BoundingBox key={index} box={box} imageRef={uploadedImageRef} />
+                  <BoundingBox key={`${key}-${index}`} box={box} imageRef={uploadedImageRef} />
                 ))}
               </>
             ) : (
@@ -171,7 +180,7 @@ export default function AnalysisSection({
               <TabsContent value="content" className="mt-4">
                 <Card className="border-0 shadow-none">
                   <CardContent className="p-0">
-                    {isLoading ? (
+                    {isLoading && !analysis ? (
                       <div className="space-y-4 p-6">
                         <Skeleton className="h-8 w-1/3" />
                         <Skeleton className="h-20 w-full" />
@@ -212,7 +221,7 @@ export default function AnalysisSection({
               <TabsContent value="implications" className="mt-4">
                  <Card className="border-0 shadow-none">
                   <CardContent className="p-6 min-h-[240px] bg-muted/30 rounded-md">
-                    {isLoading ? (
+                    {isLoading || analysis?.explanation === 'Loading explanation...' ? (
                        <div className="space-y-2">
                           <Skeleton className="h-4 w-full" />
                           <Skeleton className="h-4 w-full" />
@@ -229,7 +238,7 @@ export default function AnalysisSection({
                <TabsContent value="history" className="mt-4">
                  <Card className="border-0 shadow-none">
                   <CardContent className="p-6 min-h-[240px] bg-muted/30 rounded-md">
-                    {isLoading && !analysis?.historySummary ? (
+                    {isLoading || analysis?.historySummary === 'Loading history...' ? (
                        <div className="space-y-2">
                           <Skeleton className="h-4 w-full" />
                           <Skeleton className="h-4 w-full" />

@@ -84,7 +84,7 @@ export default function HistorySidebar({
                   onChange={(e) => handleFileChange(e, false)}
                   disabled={isLoading}
                 />
-                <Button asChild variant="outline" className="w-full bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/80" disabled={isLoading}>
+                <Button asChild variant="primary" className="w-full bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/80" disabled={isLoading}>
                   <Label htmlFor="upload-new-input" className="cursor-pointer">
                     <Upload className="mr-2 h-4 w-4" /> Upload Image
                   </Label>
@@ -102,7 +102,7 @@ export default function HistorySidebar({
                   disabled={isLoading || !selectedSample}
                 />
                 <Button asChild variant="outline" className="w-full bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80" disabled={isLoading || !selectedSample}>
-                   <Label htmlFor="retest-input" className={`cursor-pointer ${!selectedSample || isLoading ? 'cursor-not-allowed text-muted-foreground' : ''}`}>
+                   <Label htmlFor="retest-input" className={`w-full h-full flex items-center justify-center ${!selectedSample || isLoading ? 'cursor-not-allowed text-muted-foreground' : 'cursor-pointer'}`}>
                     <RefreshCw className="mr-2 h-4 w-4" /> Retest with Image
                   </Label>
                 </Button>

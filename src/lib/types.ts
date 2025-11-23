@@ -1,16 +1,8 @@
 import { Timestamp } from 'firebase/firestore';
 
-export type BoundingBox = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-
 export type Algae = {
   name: string;
   count: number;
-  boundingBoxes?: BoundingBox[];
 };
 
 export type Sample = {

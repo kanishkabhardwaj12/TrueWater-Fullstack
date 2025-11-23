@@ -163,7 +163,6 @@ export default function Dashboard() {
                         algaeContent: result.algaeAnalysis.map((algae) => ({
                             name: algae.name,
                             count: algae.count,
-                            boundingBoxes: algae.boundingBoxes || []
                         })),
                     };
                     

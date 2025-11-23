@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview Analyzes an image of a water sample to identify and quantify the types of algae present, including bounding boxes.
+ * @fileOverview Analyzes an image of a water sample to identify and quantify the types of algae present.
  *
  * - analyzeAlgaeContent - A function that handles the algae analysis process.
  * - AnalyzeAlgaeContentInput - The input type for the analyzeAlgaeContent function.
@@ -21,17 +21,9 @@ const AnalyzeAlgaeContentInputSchema = z.object({
 });
 export type AnalyzeAlgaeContentInput = z.infer<typeof AnalyzeAlgaeContentInputSchema>;
 
-const BoundingBoxSchema = z.object({
-  x: z.number().describe('The x-coordinate of the top-left corner of the bounding box, as a float between 0.0 and 1.0.'),
-  y: z.number().describe('The y-coordinate of the top-left corner of the bounding box, as a float between 0.0 and 1.0.'),
-  width: z.number().describe('The width of the bounding box, as a float between 0.0 and 1.0.'),
-  height: z.number().describe('The height of the bounding box, as a float between 0.0 and 1.0.'),
-});
-
 const AlgaeClassificationSchema = z.object({
   name: z.string().describe('The name of the algae species.'),
   count: z.number().describe('The number of times this algae species was found in the sample.'),
-  boundingBoxes: z.array(BoundingBoxSchema).optional().describe('An array of bounding boxes for each detected instance of this algae type.'),
 });
 
 const AnalyzeAlgaeContentOutputSchema = z.object({
@@ -50,9 +42,9 @@ const prompt = ai.definePrompt({
   output: {schema: AnalyzeAlgaeContentOutputSchema},
   prompt: `You are an expert in identifying and quantifying algae species in water samples from images.
 
-  Analyze the provided image of a water sample. Identify the types and quantities of algae present. For each identified algae instance, provide its species name and a bounding box (x, y, width, height) relative to the image dimensions. The coordinates and dimensions must be floats between 0.0 and 1.0.
+  Analyze the provided image of a water sample. Identify the types and quantities of algae present.
   
-  Group the results by algae name, provide a total count for each, and list all bounding boxes for that species.
+  Group the results by algae name and provide a total count for each.
 
   If no algae is detected, return an empty array for the algaeAnalysis field.
 

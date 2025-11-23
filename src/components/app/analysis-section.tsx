@@ -21,55 +21,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import type { Sample, AnalysisState, BoundingBox as BboxType } from '@/lib/types';
+import type { Sample, AnalysisState } from '@/lib/types';
 import { FileText, Microscope, History } from 'lucide-react';
-
-const BoundingBox = ({ box, imageRef }: { box: BboxType, imageRef: React.RefObject<HTMLImageElement> }) => {
-    const [style, setStyle] = useState<React.CSSProperties>({ display: 'none' });
-  
-    useEffect(() => {
-      const calculatePosition = () => {
-        if (imageRef.current) {
-          const { clientWidth, clientHeight } = imageRef.current;
-          
-          if (clientWidth === 0 || clientHeight === 0) return;
-  
-          setStyle({
-            position: 'absolute',
-            left: `${box.x * clientWidth}px`,
-            top: `${box.y * clientHeight}px`,
-            width: `${box.width * clientWidth}px`,
-            height: `${box.height * clientHeight}px`,
-            border: '2px solid yellow',
-            boxSizing: 'border-box',
-          });
-        }
-      };
-      
-      const imgElement = imageRef.current;
-  
-      if (imgElement) {
-        // The 'load' event listener handles both the initial load and subsequent loads.
-        const handleLoad = () => calculatePosition();
-        imgElement.addEventListener('load', handleLoad);
-        
-        // If the image is already complete (e.g., cached), calculate position immediately.
-        if (imgElement.complete) {
-          calculatePosition();
-        }
-  
-        const resizeObserver = new ResizeObserver(calculatePosition);
-        resizeObserver.observe(imgElement);
-  
-        return () => {
-          imgElement.removeEventListener('load', handleLoad);
-          resizeObserver.unobserve(imgElement);
-        };
-      }
-    }, [box, imageRef]);
-  
-    return <div style={style} />;
-};
   
 
 export default function AnalysisSection({
@@ -131,11 +84,6 @@ export default function AnalysisSection({
                   className="rounded-lg object-cover w-full aspect-video hover:scale-105 transition-transform duration-300"
                   crossOrigin="anonymous" // Add this for images from different origins
                 />
-                {!isLoading && (analysis?.algaeAnalysis || []).flatMap((algae) =>
-                  (algae.boundingBoxes || []).map((box, index) => (
-                     <BoundingBox key={`${key}-${algae.name}-${index}`} box={box} imageRef={uploadedImageRef} />
-                  ))
-                )}
               </>
             ) : (
               <div className="flex items-center justify-center w-full aspect-video bg-muted/50 rounded-lg border-2 border-dashed border-border">

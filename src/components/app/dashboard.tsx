@@ -60,14 +60,15 @@ export default function Dashboard() {
       const sortedSamples = [...samples].sort((a,b) => b.dateOfTest.toMillis() - a.dateOfTest.toMillis());
       handleSelectSample(sortedSamples[0]);
     }
-  }, [samples]);
+  }, [samples, selectedSample]);
 
   const handleSelectSample = (sample: Sample) => {
     setSelectedSample(sample);
     setAnalysis(null); // Clear old analysis
 
     startTransition(async () => {
-      if (!firestore) return;
+      if (!firestore || !samples) return;
+      
       const initialAnalysis: AnalysisState = {
         algaeAnalysis: sample.algaeContent || [],
         explanation: 'This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.',
@@ -75,20 +76,15 @@ export default function Dashboard() {
       };
       setAnalysis(initialAnalysis);
 
-      if (!samples) return;
-
-      const relatedSamplesQuery = query(
-        collection(firestore, 'waterSamples'),
-        where('testId', '==', sample.testId),
-        orderBy('testNumber', 'desc')
-      );
-      const querySnapshot = await getDocs(relatedSamplesQuery);
-      const relatedSamples = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sample));
+      // Client-side filtering and sorting
+      const relatedSamples = samples
+        .filter(s => s.testId === sample.testId)
+        .sort((a, b) => b.testNumber - a.testNumber);
 
       if (relatedSamples.length > 1) {
-        const serializableHistory = relatedSamples.map(s => ({
+         const serializableHistory = relatedSamples.map(s => ({
           ...s,
-          dateOfTest: s.dateOfTest.toDate().toISOString(),
+          dateOfTest: s.dateOfTest instanceof Timestamp ? s.dateOfTest.toDate().toISOString() : s.dateOfTest,
         }));
         const summary = await getHistorySummary(serializableHistory as any);
         setAnalysis(prev => ({ ...prev!, historySummary: summary }));
@@ -119,22 +115,18 @@ export default function Dashboard() {
         
         startTransition(async () => {
             try {
-              if (!firestore) {
+              if (!firestore || !waterSamplesCollection) {
                 throw new Error("Firestore is not initialized.");
               }
                 let testId, testNumber;
 
                 if (isRetest && selectedSample) {
                     testId = selectedSample.testId;
-                    const relatedSamplesQuery = query(
-                      collection(firestore, 'waterSamples'),
-                      where('testId', '==', testId),
-                      orderBy('testNumber', 'desc'),
-                      limit(1)
-                    );
-                    const querySnapshot = await getDocs(relatedSamplesQuery);
-                    const lastTestNumber = querySnapshot.empty ? 0 : querySnapshot.docs[0].data().testNumber;
-                    testNumber = lastTestNumber + 1;
+                    // Get the last test number via client-side filtering
+                    const lastTest = samples
+                      ?.filter(s => s.testId === testId)
+                      .sort((a,b) => b.testNumber - a.testNumber)[0];
+                    testNumber = (lastTest?.testNumber || 0) + 1;
                 } else {
                     testId = `TID-${Date.now()}`;
                     testNumber = 1;
@@ -175,7 +167,7 @@ export default function Dashboard() {
                         })),
                     };
                     
-                    await addDoc(waterSamplesCollection!, newSampleData);
+                    await addDoc(waterSamplesCollection, newSampleData);
 
                     toast({
                         title: 'Analysis Complete',

@@ -67,6 +67,7 @@ export default function Dashboard() {
     setAnalysis(null); // Clear old analysis
 
     startTransition(async () => {
+      if (!firestore) return;
       const initialAnalysis: AnalysisState = {
         algaeAnalysis: sample.algaeContent || [],
         explanation: 'This is a historical analysis. To get a fresh explanation, please re-analyze the sample image if needed.',
@@ -77,7 +78,7 @@ export default function Dashboard() {
       if (!samples) return;
 
       const relatedSamplesQuery = query(
-        collection(firestore!, 'waterSamples'),
+        collection(firestore, 'waterSamples'),
         where('testId', '==', sample.testId),
         orderBy('testNumber', 'desc')
       );
@@ -85,7 +86,7 @@ export default function Dashboard() {
       const relatedSamples = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sample));
 
       if (relatedSamples.length > 1) {
-          const serializableHistory = relatedSamples.map(s => ({
+        const serializableHistory = relatedSamples.map(s => ({
           ...s,
           dateOfTest: s.dateOfTest.toDate().toISOString(),
         }));
@@ -118,12 +119,15 @@ export default function Dashboard() {
         
         startTransition(async () => {
             try {
+              if (!firestore) {
+                throw new Error("Firestore is not initialized.");
+              }
                 let testId, testNumber;
 
                 if (isRetest && selectedSample) {
                     testId = selectedSample.testId;
                     const relatedSamplesQuery = query(
-                      collection(firestore!, 'waterSamples'),
+                      collection(firestore, 'waterSamples'),
                       where('testId', '==', testId),
                       orderBy('testNumber', 'desc'),
                       limit(1)
@@ -156,29 +160,27 @@ export default function Dashboard() {
                 if (result && result.algaeAnalysis) {
                     setAnalysis(result);
 
-                    if (waterSamplesCollection) {
-                        const newSampleData = {
-                            testId,
-                            testNumber,
-                            dateOfTest: serverTimestamp(),
-                            sourceWaterLocationLatitude: latitude,
-                            sourceWaterLocationLongitude: longitude,
-                            locationName,
-                            sampleImageUrl: dataUri, // In a real app, upload to Cloud Storage first
-                            algaeContent: result.algaeAnalysis.map((algae) => ({
-                                name: algae.name,
-                                count: algae.count,
-                                boundingBoxes: algae.boundingBoxes || []
-                            })),
-                        };
-                        
-                        await addDoc(waterSamplesCollection, newSampleData);
+                    const newSampleData = {
+                        testId,
+                        testNumber,
+                        dateOfTest: serverTimestamp(),
+                        sourceWaterLocationLatitude: latitude,
+                        sourceWaterLocationLongitude: longitude,
+                        locationName,
+                        sampleImageUrl: dataUri, // In a real app, upload to Cloud Storage first
+                        algaeContent: result.algaeAnalysis.map((algae) => ({
+                            name: algae.name,
+                            count: algae.count,
+                            boundingBoxes: algae.boundingBoxes || []
+                        })),
+                    };
+                    
+                    await addDoc(waterSamplesCollection!, newSampleData);
 
-                        toast({
-                            title: 'Analysis Complete',
-                            description: 'New sample has been saved to the database.',
-                        });
-                    }
+                    toast({
+                        title: 'Analysis Complete',
+                        description: 'New sample has been saved to the database.',
+                    });
                 } else {
                     setAnalysis({
                         algaeAnalysis: [],
@@ -253,7 +255,7 @@ export default function Dashboard() {
         onOpenChange={setDialogOpen}
         onSubmit={handleImageUpload}
         isRetest={dialogData?.isRetest ?? false}
-        file={dialogData?.file}
+        file={dialogData?.file ?? null}
         isLoading={isPending}
         selectedSample={selectedSample}
       />

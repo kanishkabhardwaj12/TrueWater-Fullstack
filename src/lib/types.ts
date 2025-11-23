@@ -1,8 +1,16 @@
 import { Timestamp } from 'firebase/firestore';
 
+export type BoundingBox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type Algae = {
   name: string;
   count: number;
+  boundingBoxes?: BoundingBox[];
 };
 
 export type Sample = {
@@ -14,8 +22,8 @@ export type Sample = {
   sourceWaterLocationLongitude: number;
   sampleImageUrl: string;
   algaeContent: Algae[];
-  // Deprecated fields that might exist on old documents, for backward compatibility
-  date?: string | Timestamp;
+  locationName?: string; // Added for clarity
+  // Deprecated fields
   location?: {
     name: string;
     lat: number;

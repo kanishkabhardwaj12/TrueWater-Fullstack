@@ -1,13 +1,12 @@
 'use server';
 
-import { analyzeAlgaeContent } from '@/ai/flows/analyze-algae-content';
+import { analyzeAlgaeContent, AnalyzeAlgaeContentOutput } from '@/ai/flows/analyze-algae-content';
 import { explainAlgaeImplications } from '@/ai/flows/explain-algae-implications';
 import { summarizeSampleHistory } from '@/ai/flows/summarize-sample-history';
-import type { Sample, Algae } from '@/lib/types';
+import type { Sample, Algae, BoundingBox } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 
-export type AnalysisResult = {
-  algaeAnalysis: Algae[];
+export type AnalysisResult = AnalyzeAlgaeContentOutput & {
   explanation: string;
 };
 
@@ -48,8 +47,10 @@ export async function analyzeImage(
   }
 }
 
+type SerializableSample = Omit<Sample, 'dateOfTest'> & { dateOfTest: string };
+
 export async function getHistorySummary(
-  sampleHistory: Sample[]
+  sampleHistory: SerializableSample[]
 ): Promise<string> {
   if (!sampleHistory || sampleHistory.length === 0) {
     return 'No history available for this sample.';
@@ -57,7 +58,7 @@ export async function getHistorySummary(
 
   try {
     const formattedHistory = sampleHistory.map((sample) => ({
-      date: sample.dateOfTest.toDate().toISOString(),
+      date: sample.dateOfTest, // Already a string
       algaeContent: (sample.algaeContent || []).reduce(
         (acc, algae) => {
           acc[algae.name] = algae.count;

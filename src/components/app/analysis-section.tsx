@@ -38,21 +38,19 @@ const BoundingBox = ({ box, imageRef }: { box: BboxType, imageRef: React.RefObje
         if (imageRef.current) {
           const { naturalWidth, naturalHeight, clientWidth, clientHeight } = imageRef.current;
           
-          if (naturalWidth === 0 || naturalHeight === 0) {
-            // Image not loaded yet, try again
-            return;
-          }
+          if (naturalWidth === 0 || naturalHeight === 0) return;
           
           const widthRatio = clientWidth / naturalWidth;
           const heightRatio = clientHeight / naturalHeight;
   
           setStyle({
             position: 'absolute',
-            left: `${box.x * naturalWidth * widthRatio}px`,
-            top: `${box.y * naturalHeight * heightRatio}px`,
-            width: `${box.width * naturalWidth * widthRatio}px`,
-            height: `${box.height * naturalHeight * heightRatio}px`,
+            left: `${box.x * clientWidth}px`,
+            top: `${box.y * clientHeight}px`,
+            width: `${box.width * clientWidth}px`,
+            height: `${box.height * clientHeight}px`,
             border: '2px solid yellow',
+            boxSizing: 'border-box',
           });
         }
       };
@@ -60,15 +58,12 @@ const BoundingBox = ({ box, imageRef }: { box: BboxType, imageRef: React.RefObje
       const imgElement = imageRef.current;
   
       if (imgElement) {
-        // If the image is already loaded, calculate immediately.
         if (imgElement.complete) {
           calculatePosition();
         } else {
-          // Otherwise, wait for it to load.
           imgElement.onload = calculatePosition;
         }
   
-        // Recalculate on window resize.
         window.addEventListener('resize', calculatePosition);
   
         return () => {
@@ -144,9 +139,11 @@ export default function AnalysisSection({
                   height={400}
                   className="rounded-lg object-cover w-full aspect-video hover:scale-105 transition-transform duration-300"
                 />
-                {!isLoading && allBoundingBoxes.map((box, index) => (
-                  <BoundingBox key={`${key}-${index}`} box={box} imageRef={uploadedImageRef} />
-                ))}
+                {!isLoading && (analysis?.algaeAnalysis || []).flatMap((algae) =>
+                  (algae.boundingBoxes || []).map((box, index) => (
+                     <BoundingBox key={`${key}-${algae.name}-${index}`} box={box} imageRef={uploadedImageRef} />
+                  ))
+                )}
               </>
             ) : (
               <div className="flex items-center justify-center w-full aspect-video bg-muted/50 rounded-lg border-2 border-dashed border-border">

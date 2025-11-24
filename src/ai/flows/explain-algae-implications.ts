@@ -32,7 +32,7 @@ const prompt = ai.definePrompt({
   output: {schema: ExplainAlgaeImplicationsOutputSchema},
   prompt: `You are an expert in water quality analysis and public health. Based on the detected algae content in a water sample, provide a detailed, easy-to-understand explanation of its potential implications.
 
-  Format the output as plain text. Do not use any special characters like hashtags, stars, or other markdown. Use titles followed by colons for each section.
+  Format the output as plain text. Do not use any special characters like hashtags, stars, or other markdown. Use titles followed by colons for each section. Ensure there is a newline after each point to prevent lumping text together.
 
   Cover the following points:
   1.  Overall Water Quality: What does this algae presence mean for the general health of the water body?
